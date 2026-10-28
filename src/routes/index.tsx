@@ -276,12 +276,12 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
             <button aria-label="Öka tid" onClick={() => onChange((t) => ({ ...t, minutes: snap(t.minutes + 5) }))}>+</button>
           </div>
         </div>
-        <div className="rounded-2xl bg-primary py-2 text-center">
+        <div className={`rounded-2xl py-2 text-center ${complete ? "bg-frog" : "bg-primary"}`}>
           <div className="text-xs">Utförda:</div>
           <div className="font-bold">{done}/{task.subs.length}</div>
         </div>
       </div>
-      <div className="rounded-2xl border-2 border-primary p-3">
+      <div className={`rounded-2xl border-2 p-3 ${complete ? "border-frog" : "border-primary"}`}>
         <div className="mb-2 text-center text-lg">Att göra</div>
         <div className="space-y-2">
           {task.subs.map((s) => (
@@ -292,7 +292,7 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
                   onChange={(e) => onChange((t) => ({ ...t, subs: t.subs.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x)) }))}
                   onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
                   onBlur={commit}
-                  className="flex-1 rounded-md border-2 border-primary bg-transparent px-1 outline-none" />
+                  className={`flex-1 rounded-md border-2 bg-transparent px-1 outline-none ${complete ? "border-frog" : "border-primary"}`} />
               ) : (
                 <span className="flex-1 truncate">{s.name}</span>
               )}
