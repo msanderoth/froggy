@@ -12,6 +12,7 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-frog: var(--frog);
   --color-frog-light: var(--frog-light);
+  --color-frog-mid: var(--frog-mid);
   --color-late: var(--late);
   --color-late-bg: var(--late-bg);
   --color-muted-foreground: var(--muted-foreground);
