@@ -261,14 +261,14 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
       <div className="relative mb-5 flex items-center justify-center">
         {editName ? (
           <input autoFocus value={task.name} onChange={(e) => onChange((t) => ({ ...t, name: e.target.value }))} onBlur={() => setEditName(false)} onKeyDown={(e) => e.key === "Enter" && setEditName(false)}
-            className="w-3/4 rounded-lg border-2 border-primary bg-transparent px-2 text-center text-xl font-bold outline-none" />
+            className={`w-3/4 rounded-lg border-2 bg-transparent px-2 text-center text-xl font-bold outline-none ${complete ? "border-frog" : "border-primary"}`} />
         ) : (
           <button onClick={() => setEditName(true)} className="text-xl font-bold">{task.name}</button>
         )}
         <button aria-label="Stäng" onClick={onClose} className="absolute right-1 text-2xl">✕</button>
       </div>
       <div className="mb-5 grid grid-cols-2 gap-3 text-primary-foreground">
-        <div className="rounded-2xl bg-primary py-2 text-center">
+        <div className={`rounded-2xl py-2 text-center ${complete ? "bg-frog" : "bg-primary"}`}>
           <div className="text-xs">Uppskattad tid:</div>
           <div className="flex items-center justify-center gap-3 font-bold">
             <button aria-label="Minska tid" onClick={() => onChange((t) => ({ ...t, minutes: snap(t.minutes - 5) }))}>−</button>
