@@ -265,9 +265,9 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
       <div className="relative mb-5 flex items-center justify-center">
         {editName ? (
           <input autoFocus value={task.name} onChange={(e) => onChange((t) => ({ ...t, name: e.target.value }))} onBlur={() => setEditName(false)} onKeyDown={(e) => e.key === "Enter" && setEditName(false)}
-            className={`w-3/4 rounded-lg border-2 bg-transparent px-2 text-center text-xl font-bold outline-none ${complete ? "border-frog" : late ? "border-late" : "border-primary"}`} />
+            className={`w-3/4 rounded-lg border-2 bg-transparent px-2 text-center text-[24px] font-bold outline-none ${complete ? "border-frog" : late ? "border-late" : "border-primary"}`} />
         ) : (
-          <button onClick={() => setEditName(true)} className="text-xl font-bold">{task.name}</button>
+          <button onClick={() => setEditName(true)} className="text-[24px] font-bold">{task.name}</button>
         )}
         <button aria-label="Stäng" onClick={onClose} className="absolute right-1"><img src={exitSvg} alt="" className="h-6 w-6" draggable={false} /></button>
       </div>
