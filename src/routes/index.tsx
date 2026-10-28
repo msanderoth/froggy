@@ -203,7 +203,7 @@ function App() {
                       </span>
                     </div>
                   </div>
-                  <div className="mt-1 space-y-1.5" style={{ maskImage: "linear-gradient(to bottom, black 70%, transparent)" }}>
+                  <div className="mt-1 space-y-1.5 overflow-hidden" style={{ maxHeight: h - GAP - 54, maskImage: "linear-gradient(to bottom, black calc(100% - 30px), transparent)", WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 30px), transparent)" }}>
                     {sorted.map((s) => (
                       <div key={s.id} className={`flex items-center gap-2 text-sm ${s.done ? "text-frog" : "text-muted-foreground"}`}>
                         <Circle done={s.done} late={isLate} />
