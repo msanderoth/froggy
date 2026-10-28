@@ -100,7 +100,7 @@ function App() {
   const late = (i: number) => {
     if (!isToday) return false;
     const end = DAY_START + tasks.slice(0, i + 1).reduce((a, t) => a + t.minutes, 0);
-    const t = tasks[i];
+    const t = tasks[i]!;
     return nowMin > end && !(t.subs.length && t.subs.every((s) => s.done));
   };
   const anyLate = tasks.some((_, i) => late(i));
@@ -128,7 +128,7 @@ function App() {
     } else {
       setDragY({ id: d.id, dy });
       const idx = tasks.findIndex((t) => t.id === d.id);
-      const me = layout[idx];
+      const me = layout[idx]!;
       const center = me.top + dy + me.h / 2;
       const nb = idx > 0 ? layout[idx - 1] : null;
       const na = idx < tasks.length - 1 ? layout[idx + 1] : null;
