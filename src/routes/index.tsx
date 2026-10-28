@@ -153,7 +153,7 @@ function App() {
               );
             })}
             {isToday && nowMin >= DAY_START && (
-              <img src={timeMarker} alt="Nu" className="absolute left-[1.6rem] h-8 w-8" style={{ top: nowY - 16 }} draggable={false} />
+              <img src={timeMarker} alt="Nu" className="absolute z-10 h-10 w-10" style={{ left: 5, top: nowY - 18.75 }} draggable={false} />
             )}
             {layout.map(({ t, top, h }, i) => {
               const done = t.subs.filter((s) => s.done).length;
