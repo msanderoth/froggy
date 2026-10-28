@@ -268,7 +268,7 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
         ) : (
           <button onClick={() => setEditName(true)} className="text-xl font-bold">{task.name}</button>
         )}
-        <button aria-label="Stäng" onClick={onClose}><img src={exitSvg} alt="" className="h-6 w-6" draggable={false} /></button>
+        <button aria-label="Stäng" onClick={onClose} className="absolute right-1"><img src={exitSvg} alt="" className="h-6 w-6" draggable={false} /></button>
       </div>
       <div className="mb-5 grid grid-cols-2 gap-3 text-primary-foreground">
         <div className={`rounded-2xl py-2 text-center ${complete ? "bg-frog" : "bg-primary"}`}>
