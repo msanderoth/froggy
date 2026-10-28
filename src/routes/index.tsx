@@ -290,13 +290,13 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
         <div className="space-y-2">
           {task.subs.map((s) => (
             <div key={s.id} className={`flex items-center gap-3 text-lg ${s.done ? "text-frog" : ""}`}>
-              <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} size={20} /></button>
+              <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} late={late} size={20} /></button>
               {s.id === editId ? (
                 <input autoFocus value={s.name} placeholder="Sub-task"
                   onChange={(e) => onChange((t) => ({ ...t, subs: t.subs.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x)) }))}
                   onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
                   onBlur={commit}
-                  className={`flex-1 rounded-md border-2 bg-transparent px-1 outline-none ${complete ? "border-frog" : "border-primary"}`} />
+                  className={`flex-1 rounded-md border-2 bg-transparent px-1 outline-none ${complete ? "border-frog" : late ? "border-late" : "border-primary"}`} />
               ) : (
                 <span className="flex-1 truncate">{s.name}</span>
               )}
@@ -304,8 +304,8 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
             </div>
           ))}
         </div>
-        <button onClick={addNew} className={`mx-auto mt-3 flex items-center gap-2 text-xl ${complete ? "text-frog" : "text-primary"}`}>
-          <img src={complete ? smallAddGreen : smallAdd} alt="" className="h-7 w-7" draggable={false} /> Lägg till
+        <button onClick={addNew} className={`mx-auto mt-3 flex items-center gap-2 text-xl ${complete ? "text-frog" : late ? "text-late" : "text-primary"}`}>
+          <img src={complete ? smallAddGreen : late ? smallAddPink : smallAdd} alt="" className="h-7 w-7" draggable={false} /> Lägg till
         </button>
       </div>
       <button onClick={onDelete} className="mt-6 self-center text-sm text-late">Ta bort uppgift</button>
