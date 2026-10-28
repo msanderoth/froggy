@@ -309,7 +309,7 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
           <img src={complete ? smallAddGreen : late ? smallAddPink : smallAdd} alt="" className="h-7 w-7" draggable={false} /> Lägg till
         </button>
       </div>
-      <button onClick={onDelete} className="mt-6 self-center text-sm text-late">Ta bort uppgift</button>
+      <button onClick={onDelete} className="mt-6 self-center text-[14px] text-late">Ta bort uppgift</button>
       <button aria-label="Klar" onClick={onClose} className="absolute bottom-5 right-5"><img src={buttonAccept} alt="" className="h-14 w-14" draggable={false} /></button>
     </div>
   );
