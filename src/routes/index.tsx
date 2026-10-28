@@ -22,7 +22,7 @@ export const Route = createFileRoute("/")({
 });
 
 type Sub = { id: string; name: string; done: boolean };
-type Task = { id: string; name: string; minutes: number; start: number; subs: Sub[] };
+export type Task = { id: string; name: string; minutes: number; start: number; subs: Sub[] };
 
 const PX_PER_MIN = 2.9;
 const DAY_START = 8 * 60;
@@ -31,6 +31,8 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const dayKey = (d: Date) => "frog-" + d.toISOString().slice(0, 10);
 const snap = (m: number) => Math.max(5, Math.round(m / 5) * 5);
 const snapStart = (m: number) => Math.min(24 * 60 - 5, Math.max(DAY_START, Math.round(m / 5) * 5));
+// estimated time on the card: "45 min" or "1 h 30 min"
+const fmtTime = (m: number) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}`);
 // new task goes at the given time; if that slot is taken, it moves below the task already there
 export const placeNew = (ts: Pick<Task, "start" | "minutes">[], at: number, len: number) => {
   let st = Math.max(DAY_START, Math.floor(at / 5) * 5);
@@ -189,13 +191,16 @@ function App() {
                   className={`absolute left-14 right-3 touch-none overflow-hidden rounded-2xl px-3 pt-2 shadow-sm ${dy ? "z-20 shadow-lg" : "transition-[top]"} ${complete ? "bg-frog-light" : isLate ? "border-2 border-late bg-late-bg" : "bg-card"}`}
                   style={{ top: top + GAP / 2, height: h - GAP }}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-lg font-semibold">{t.name}</span>
-                    {!complete && (
-                      <span className={`rounded-full px-2 text-xs text-primary-foreground ${isLate ? "bg-late" : "bg-primary"}`}>
-                        {done}/{t.subs.length}
-                      </span>
-                    )}
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {!complete && (
+                        <span className={`rounded-full px-2 text-xs text-primary-foreground ${isLate ? "bg-late" : "bg-primary"}`}>
+                          {done}/{t.subs.length}
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">{fmtTime(t.minutes)}</span>
+                    </div>
                   </div>
                   <div className="mt-1 space-y-1.5" style={{ maskImage: "linear-gradient(to bottom, black 70%, transparent)" }}>
                     {sorted.map((s) => (
