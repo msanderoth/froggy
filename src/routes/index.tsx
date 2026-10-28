@@ -168,7 +168,7 @@ function App() {
         <div ref={scrollRef} className="flex-1 overflow-y-auto pb-28" onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
           <div className="relative" style={{ height: hours * 60 * PX_PER_MIN }}>
             <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-card" />
-            {isToday && nowMin >= DAY_START && (
+            {loaded && isToday && nowMin >= DAY_START && (
               <div className="absolute left-10 top-0 w-0.5 bg-frog" style={{ height: nowY }} />
             )}
             {Array.from({ length: hours }, (_, h) => {
@@ -179,7 +179,7 @@ function App() {
                 </div>
               );
             })}
-            {isToday && nowMin >= DAY_START && (
+            {loaded && isToday && nowMin >= DAY_START && (
               <img src={timeMarker} alt="Nu" className="absolute z-10 h-10 w-10" style={{ left: 5, top: nowY - 18.75 }} draggable={false} />
             )}
             {layout.map(({ t, top, h }, i) => {
