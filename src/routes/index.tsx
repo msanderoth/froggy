@@ -6,6 +6,7 @@ import timeMarker from "@/assets/time-marker.svg";
 import buttonAdd from "@/assets/button-add.svg";
 import smallAdd from "@/assets/small-add.svg";
 import smallAddGreen from "@/assets/small-add-green.svg";
+import smallAddPink from "@/assets/small-add-pink.svg";
 import exitSvg from "@/assets/exit.svg";
 import buttonAccept from "@/assets/button-accept.svg";
 import checkChecked from "@/assets/checkbox-checked.svg";
@@ -227,13 +228,13 @@ function App() {
           </div>
         </div>
         <button aria-label="Ny uppgift" onClick={addTask} className="absolute bottom-5 right-5"><img src={buttonAdd} alt="" className="h-16 w-16" draggable={false} /></button>
-        {open && <Detail task={open} onChange={(f) => update(open.id, f)} onClose={() => setOpenId(null)} onDelete={() => { setTasks((ts) => ts.filter((t) => t.id !== open.id)); setOpenId(null); }} />}
+        {open && <Detail task={open} late={late(tasks.indexOf(open))} onChange={(f) => update(open.id, f)} onClose={() => setOpenId(null)} onDelete={() => { setTasks((ts) => ts.filter((t) => t.id !== open.id)); setOpenId(null); }} />}
       </div>
     </div>
   );
 }
 
-function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (f: (t: Task) => Task) => void; onClose: () => void; onDelete: () => void }) {
+function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late: boolean; onChange: (f: (t: Task) => Task) => void; onClose: () => void; onDelete: () => void }) {
   const [editName, setEditName] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const done = task.subs.filter((s) => s.done).length;
