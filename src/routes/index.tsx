@@ -219,7 +219,7 @@ function App() {
                     className="absolute inset-x-0 bottom-0 flex h-4 cursor-ns-resize touch-none items-center justify-center"
                     aria-label="Ändra tid"
                   >
-                    <span className="h-1 w-8 rounded-full bg-primary/40" />
+                    <span className={`h-1 w-8 rounded-full ${complete ? "bg-frog/60" : isLate ? "bg-late/60" : "bg-primary/40"}`} />
                   </div>
                 </div>
               );
