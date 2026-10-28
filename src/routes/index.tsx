@@ -22,14 +22,17 @@ export const Route = createFileRoute("/")({
 });
 
 type Sub = { id: string; name: string; done: boolean };
-type Task = { id: string; name: string; minutes: number; subs: Sub[] };
+type Task = { id: string; name: string; minutes: number; start: number; subs: Sub[] };
 
 const PX_PER_MIN = 2.9;
 const DAY_START = 8 * 60;
-const GAP = 12;
+const GAP = 4;
 const uid = () => Math.random().toString(36).slice(2, 10);
 const dayKey = (d: Date) => "frog-" + d.toISOString().slice(0, 10);
 const snap = (m: number) => Math.max(5, Math.round(m / 5) * 5);
+const snapStart = (m: number) => Math.min(24 * 60 - 5, Math.max(DAY_START, Math.round(m / 5) * 5));
+// older saved lists had no start time: place them back to back
+const migrate = (ts: Task[]) => { let c = DAY_START; return ts.map((t) => { const st = typeof t.start === "number" ? t.start : c; c = st + t.minutes; return { ...t, start: st }; }); };
 
 function Circle({ done, late, size = 16 }: { done: boolean; late?: boolean; size?: number }) {
   return <img src={done ? checkChecked : late ? checkStressed : checkDefault} alt="" width={size} height={size} className="shrink-0" draggable={false} />;
@@ -45,7 +48,7 @@ function App() {
   useEffect(() => {
     setLoaded(false);
     const raw = localStorage.getItem(dayKey(date));
-    setTasks(raw ? JSON.parse(raw) : []);
+    setTasks(raw ? migrate(JSON.parse(raw)) : []);
     setLoaded(true);
   }, [date]);
   useEffect(() => {
@@ -61,22 +64,13 @@ function App() {
   const shift = (n: number) => setDate((d) => new Date(d.getTime() + n * 864e5));
   const label = isToday ? "Idag" : date.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short" });
 
-  // layout
-  let cursor = 0;
-  const layout = tasks.map((t) => {
-    const top = cursor;
-    const h = t.minutes * PX_PER_MIN;
-    cursor += h + GAP;
-    return { t, top, h, start: DAY_START + top / PX_PER_MIN };
-  });
-  // convert y to minutes: use cumulative minutes, gaps count as tiny time
-  const totalH = Math.max(cursor + 200, (24 * 60 - DAY_START) * PX_PER_MIN);
-  const hours = Math.ceil(totalH / PX_PER_MIN / 60);
+  const layout = tasks.map((t) => ({ t, top: (t.start - DAY_START) * PX_PER_MIN, h: t.minutes * PX_PER_MIN }));
+  const lastEnd = tasks.reduce((m, t) => Math.max(m, t.start + t.minutes), DAY_START);
+  const hours = Math.max(16, Math.ceil((lastEnd - DAY_START) / 60) + 1);
   const late = (i: number) => {
     if (!isToday) return false;
-    const end = DAY_START + tasks.slice(0, i + 1).reduce((a, t) => a + t.minutes, 0);
     const t = tasks[i]!;
-    return nowMin > end && !(t.subs.length && t.subs.every((s) => s.done));
+    return nowMin > t.start + t.minutes && !(t.subs.length && t.subs.every((s) => s.done));
   };
   const anyLate = tasks.some((_, i) => late(i));
 
@@ -84,13 +78,12 @@ function App() {
 
   // drag state
   const drag = useRef<{ id: string; mode: "move" | "resize"; y0: number; v0: number; moved: boolean } | null>(null);
-  const [dragY, setDragY] = useState<{ id: string; dy: number } | null>(null);
 
   const onDown = (e: React.PointerEvent, id: string, mode: "move" | "resize") => {
     e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     const t = tasks.find((x) => x.id === id)!;
-    drag.current = { id, mode, y0: e.clientY, v0: t.minutes, moved: false };
+    drag.current = { id, mode, y0: e.clientY, v0: mode === "move" ? t.start : t.minutes, moved: false };
   };
   const onMove = (e: React.PointerEvent) => {
     const d = drag.current;
@@ -98,35 +91,19 @@ function App() {
     const dy = e.clientY - d.y0;
     if (Math.abs(dy) > 6) d.moved = true;
     if (!d.moved) return;
-    if (d.mode === "resize") {
-      update(d.id, (t) => ({ ...t, minutes: snap(d.v0 + dy / PX_PER_MIN) }));
-    } else {
-      setDragY({ id: d.id, dy });
-      const idx = tasks.findIndex((t) => t.id === d.id);
-      const me = layout[idx]!;
-      const center = me.top + dy + me.h / 2;
-      const nb = idx > 0 ? layout[idx - 1] : null;
-      const na = idx < tasks.length - 1 ? layout[idx + 1] : null;
-      if (nb && center < nb.top + nb.h / 2) {
-        setTasks((ts) => { const c = [...ts]; c.splice(idx - 1, 2, c[idx]!, c[idx - 1]!); return c; });
-        d.y0 -= nb.h + GAP;
-        setDragY({ id: d.id, dy: e.clientY - d.y0 });
-      } else if (na && center > na.top + na.h / 2) {
-        setTasks((ts) => { const c = [...ts]; c.splice(idx, 2, c[idx + 1]!, c[idx]!); return c; });
-        d.y0 += na.h + GAP;
-        setDragY({ id: d.id, dy: e.clientY - d.y0 });
-      }
-    }
+    if (d.mode === "resize") update(d.id, (t) => ({ ...t, minutes: snap(d.v0 + dy / PX_PER_MIN) }));
+    else update(d.id, (t) => ({ ...t, start: snapStart(d.v0 + dy / PX_PER_MIN) }));
   };
   const onUp = () => {
     const d = drag.current;
     drag.current = null;
-    setDragY(null);
+    if (d?.moved) setTasks((ts) => [...ts].sort((x, y) => x.start - y.start));
     if (d && !d.moved && d.mode === "move") setOpenId(d.id);
   };
 
   const addTask = () => {
-    const t: Task = { id: uid(), name: "Ny uppgift", minutes: 30, subs: [] };
+    const base = isToday ? Math.max(lastEnd, snapStart(nowMin)) : lastEnd;
+    const t: Task = { id: uid(), name: "Ny uppgift", minutes: 30, start: snapStart(base), subs: [] };
     setTasks((ts) => [...ts, t]);
     setOpenId(t.id);
   };
@@ -141,15 +118,9 @@ function App() {
     if (!el) return;
     const nm = new Date().getHours() * 60 + new Date().getMinutes();
     if (nm < DAY_START) { el.scrollTop = 0; return; }
-    let acc = 0, gaps = 0;
-    for (const t of tasks) { acc += t.minutes; if (DAY_START + acc < nm) gaps++; }
-    el.scrollTop = Math.max(0, (nm - DAY_START) * PX_PER_MIN + gaps * GAP - 90);
+    el.scrollTop = Math.max(0, (nm - DAY_START) * PX_PER_MIN - 90);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, isToday]);
-  // approximate: account for gaps before now
-  let gapAdj = 0;
-  { let acc = 0; for (const t of tasks) { acc += t.minutes; if (DAY_START + acc < nowMin) gapAdj += GAP; } }
-
   return (
     <div className="mx-auto flex h-dvh max-w-md flex-col items-center px-3 pt-4 select-none">
       <div className="relative z-10 -mb-3 self-end mr-14"><img src={anyLate ? froggySad : froggyHappy} alt={anyLate ? "Ledsen groda" : "Glad groda"} className="h-20 w-auto" draggable={false} /></div>
@@ -163,12 +134,10 @@ function App() {
           <div className="relative" style={{ height: hours * 60 * PX_PER_MIN }}>
             <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-card" />
             {isToday && nowMin >= DAY_START && (
-              <div className="absolute left-10 top-0 w-0.5 bg-frog" style={{ height: nowY + gapAdj }} />
+              <div className="absolute left-10 top-0 w-0.5 bg-frog" style={{ height: nowY }} />
             )}
             {Array.from({ length: hours }, (_, h) => {
-              let y = h * 60 * PX_PER_MIN;
-              let acc = 0;
-              for (const t of tasks) { acc += t.minutes; if (acc <= h * 60) y += GAP; }
+              const y = h * 60 * PX_PER_MIN;
               return (
                 <div key={h} className="absolute left-3 text-xs" style={{ top: y - 2 }}>
                   {String(8 + h).padStart(2, "0")}
@@ -176,20 +145,20 @@ function App() {
               );
             })}
             {isToday && nowMin >= DAY_START && (
-              <img src={timeMarker} alt="Nu" className="absolute left-[1.6rem] h-8 w-8" style={{ top: nowY + gapAdj - 16 }} draggable={false} />
+              <img src={timeMarker} alt="Nu" className="absolute left-[1.6rem] h-8 w-8" style={{ top: nowY - 16 }} draggable={false} />
             )}
             {layout.map(({ t, top, h }, i) => {
               const done = t.subs.filter((s) => s.done).length;
               const complete = t.subs.length > 0 && done === t.subs.length;
               const isLate = late(i);
               const sorted = [...t.subs.filter((s) => !s.done), ...t.subs.filter((s) => s.done)];
-              const dy = dragY?.id === t.id ? dragY.dy : 0;
+              const dy = drag.current?.id === t.id && drag.current.moved;
               return (
                 <div
                   key={t.id}
                   onPointerDown={(e) => onDown(e, t.id, "move")}
                   className={`absolute left-14 right-3 touch-none overflow-hidden rounded-2xl px-3 pt-2 shadow-sm ${dy ? "z-20 shadow-lg" : "transition-[top]"} ${complete ? "bg-frog-light" : isLate ? "border-2 border-late bg-late-bg" : "bg-card"}`}
-                  style={{ top: top + dy, height: h }}
+                  style={{ top: top + GAP / 2, height: h - GAP }}
                 >
                   <div className="flex items-center justify-between">
                     <span className="truncate text-lg font-semibold">{t.name}</span>
