@@ -303,7 +303,7 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
           ))}
         </div>
         <button onClick={addNew} className={`mx-auto mt-3 flex items-center gap-2 text-xl ${complete ? "text-frog" : "text-primary"}`}>
-          <img src={smallAdd} alt="" className="h-7 w-7" draggable={false} /> Lägg till
+          <img src={complete ? smallAddGreen : smallAdd} alt="" className="h-7 w-7" draggable={false} /> Lägg till
         </button>
       </div>
       <button onClick={onDelete} className="mt-6 self-center text-sm text-late">Ta bort uppgift</button>
