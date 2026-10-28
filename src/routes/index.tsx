@@ -4,6 +4,7 @@ import froggyHappy from "@/assets/froggy-happy.svg";
 import froggySad from "@/assets/froggy-sad.svg";
 import timeMarker from "@/assets/time-marker.svg";
 import buttonAdd from "@/assets/button-add.svg";
+import smallAdd from "@/assets/small-add.svg";
 import buttonAccept from "@/assets/button-accept.svg";
 import checkChecked from "@/assets/checkbox-checked.svg";
 import checkDefault from "@/assets/checkbox-default.svg";
