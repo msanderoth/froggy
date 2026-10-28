@@ -95,8 +95,8 @@ function App() {
     return { t, top, h, start: DAY_START + top / PX_PER_MIN };
   });
   // convert y to minutes: use cumulative minutes, gaps count as tiny time
-  const totalH = Math.max(cursor + 200, 4 * 60 * PX_PER_MIN);
-  const hours = Math.ceil(totalH / PX_PER_MIN / 60) + 1;
+  const totalH = Math.max(cursor + 200, (24 * 60 - DAY_START) * PX_PER_MIN);
+  const hours = Math.ceil(totalH / PX_PER_MIN / 60);
   const late = (i: number) => {
     if (!isToday) return false;
     const end = DAY_START + tasks.slice(0, i + 1).reduce((a, t) => a + t.minutes, 0);
@@ -158,6 +158,19 @@ function App() {
 
   const open = tasks.find((t) => t.id === openId);
   const nowY = (nowMin - DAY_START) * PX_PER_MIN;
+  // jump to current time when the app opens
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!loaded || !isToday) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const nm = new Date().getHours() * 60 + new Date().getMinutes();
+    if (nm < DAY_START) { el.scrollTop = 0; return; }
+    let acc = 0, gaps = 0;
+    for (const t of tasks) { acc += t.minutes; if (DAY_START + acc < nm) gaps++; }
+    el.scrollTop = Math.max(0, (nm - DAY_START) * PX_PER_MIN + gaps * GAP - 90);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, isToday]);
   // approximate: account for gaps before now
   let gapAdj = 0;
   { let acc = 0; for (const t of tasks) { acc += t.minutes; if (DAY_START + acc < nowMin) gapAdj += GAP; } }
@@ -171,7 +184,7 @@ function App() {
           <span className="min-w-20 text-center capitalize">{label}</span>
           <button aria-label="Nästa dag" onClick={() => shift(1)} className="px-2">›</button>
         </div>
-        <div className="flex-1 overflow-y-auto pb-28" onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+        <div ref={scrollRef} className="flex-1 overflow-y-auto pb-28" onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
           <div className="relative" style={{ height: hours * 60 * PX_PER_MIN }}>
             <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-card" />
             {isToday && nowMin >= DAY_START && (
