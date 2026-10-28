@@ -203,7 +203,7 @@ function App() {
                       </span>
                     </div>
                   </div>
-                  <div className="mt-1 space-y-1.5" style={{ maskImage: "linear-gradient(to bottom, black 70%, transparent)" }}>
+                  <div className="mt-1 space-y-1.5 overflow-hidden" style={{ maxHeight: h - GAP - 56, maskImage: "linear-gradient(to bottom, black calc(100% - 14px), transparent)", WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 14px), transparent)" }}>
                     {sorted.map((s) => (
                       <div key={s.id} className={`flex items-center gap-2 text-sm ${s.done ? "text-frog" : "text-muted-foreground"}`}>
                         <Circle done={s.done} late={isLate} />
@@ -219,7 +219,7 @@ function App() {
                     className="absolute inset-x-0 bottom-0 flex h-4 cursor-ns-resize touch-none items-center justify-center"
                     aria-label="Ändra tid"
                   >
-                    <span className="h-1 w-8 rounded-full bg-primary/40" />
+                    <span className={`h-1 w-8 rounded-full ${complete ? "bg-frog/60" : isLate ? "bg-late/60" : "bg-primary/40"}`} />
                   </div>
                 </div>
               );
