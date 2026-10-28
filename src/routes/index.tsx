@@ -133,11 +133,11 @@ function App() {
       const nb = idx > 0 ? layout[idx - 1] : null;
       const na = idx < tasks.length - 1 ? layout[idx + 1] : null;
       if (nb && center < nb.top + nb.h / 2) {
-        setTasks((ts) => { const c = [...ts]; [c[idx - 1], c[idx]] = [c[idx], c[idx - 1]]; return c; });
+        setTasks((ts) => { const c = [...ts]; c.splice(idx - 1, 2, c[idx]!, c[idx - 1]!); return c; });
         d.y0 -= nb.h + GAP;
         setDragY({ id: d.id, dy: e.clientY - d.y0 });
       } else if (na && center > na.top + na.h / 2) {
-        setTasks((ts) => { const c = [...ts]; [c[idx + 1], c[idx]] = [c[idx], c[idx + 1]]; return c; });
+        setTasks((ts) => { const c = [...ts]; c.splice(idx, 2, c[idx + 1]!, c[idx]!); return c; });
         d.y0 += na.h + GAP;
         setDragY({ id: d.id, dy: e.clientY - d.y0 });
       }
