@@ -286,7 +286,7 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
         </div>
       </div>
       <div className={`rounded-2xl border-2 p-3 ${complete ? "border-frog" : late ? "border-late" : "border-primary"}`}>
-        <div className="mb-2 text-center text-[20px]">Att göra</div>
+        <div className="mb-2 text-center text-[24px]">Att göra</div>
         <div className="space-y-2">
           {task.subs.map((s) => (
             <div key={s.id} className={`flex items-center gap-3 text-lg ${s.done ? "text-frog" : ""}`}>
