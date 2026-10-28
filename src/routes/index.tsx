@@ -153,7 +153,7 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, isToday]);
   return (
-    <div className="mx-auto flex h-dvh max-w-md flex-col items-center px-3 pt-4 select-none">
+    <div className="mx-auto flex h-dvh max-w-md flex-col items-center px-3 pt-4 pb-6 select-none">
       <div className="relative z-10 -mb-3 self-end mr-14"><img src={anyLate ? froggySad : froggyHappy} alt={anyLate ? "Ledsen groda" : "Glad groda"} className="h-20 w-auto" draggable={false} /></div>
       <div className="relative flex w-full flex-1 flex-col overflow-hidden rounded-t-[2.5rem] bg-panel">
         <div className="flex items-center justify-center gap-6 py-4 text-xl font-bold">
