@@ -6,6 +6,7 @@ import timeMarker from "@/assets/time-marker.svg";
 import buttonAdd from "@/assets/button-add.svg";
 import smallAdd from "@/assets/small-add.svg";
 import smallAddGreen from "@/assets/small-add-green.svg";
+import smallAddPink from "@/assets/small-add-pink.svg";
 import exitSvg from "@/assets/exit.svg";
 import buttonAccept from "@/assets/button-accept.svg";
 import checkChecked from "@/assets/checkbox-checked.svg";
@@ -227,13 +228,13 @@ function App() {
           </div>
         </div>
         <button aria-label="Ny uppgift" onClick={addTask} className="absolute bottom-5 right-5"><img src={buttonAdd} alt="" className="h-16 w-16" draggable={false} /></button>
-        {open && <Detail task={open} onChange={(f) => update(open.id, f)} onClose={() => setOpenId(null)} onDelete={() => { setTasks((ts) => ts.filter((t) => t.id !== open.id)); setOpenId(null); }} />}
+        {open && <Detail task={open} late={late(tasks.indexOf(open))} onChange={(f) => update(open.id, f)} onClose={() => setOpenId(null)} onDelete={() => { setTasks((ts) => ts.filter((t) => t.id !== open.id)); setOpenId(null); }} />}
       </div>
     </div>
   );
 }
 
-function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (f: (t: Task) => Task) => void; onClose: () => void; onDelete: () => void }) {
+function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late: boolean; onChange: (f: (t: Task) => Task) => void; onClose: () => void; onDelete: () => void }) {
   const [editName, setEditName] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const done = task.subs.filter((s) => s.done).length;
@@ -260,18 +261,18 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
   };
   const complete = task.subs.length > 0 && done === task.subs.length;
   return (
-    <div className={`absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-t-[2.5rem] px-4 pt-6 pb-24 animate-in slide-in-from-bottom-4 fade-in ${complete ? "bg-frog-light" : "bg-card"}`}>
+    <div className={`absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-t-[2.5rem] px-4 pt-6 pb-24 animate-in slide-in-from-bottom-4 fade-in ${complete ? "bg-frog-light" : late ? "bg-late-bg" : "bg-card"}`}>
       <div className="relative mb-5 flex items-center justify-center">
         {editName ? (
           <input autoFocus value={task.name} onChange={(e) => onChange((t) => ({ ...t, name: e.target.value }))} onBlur={() => setEditName(false)} onKeyDown={(e) => e.key === "Enter" && setEditName(false)}
-            className={`w-3/4 rounded-lg border-2 bg-transparent px-2 text-center text-xl font-bold outline-none ${complete ? "border-frog" : "border-primary"}`} />
+            className={`w-3/4 rounded-lg border-2 bg-transparent px-2 text-center text-xl font-bold outline-none ${complete ? "border-frog" : late ? "border-late" : "border-primary"}`} />
         ) : (
           <button onClick={() => setEditName(true)} className="text-xl font-bold">{task.name}</button>
         )}
         <button aria-label="Stäng" onClick={onClose} className="absolute right-1"><img src={exitSvg} alt="" className="h-6 w-6" draggable={false} /></button>
       </div>
       <div className="mb-5 grid grid-cols-2 gap-3 text-primary-foreground">
-        <div className={`rounded-2xl py-2 text-center ${complete ? "bg-frog" : "bg-primary"}`}>
+        <div className={`rounded-2xl py-2 text-center ${complete ? "bg-frog" : late ? "bg-late" : "bg-primary"}`}>
           <div className="text-xs">Uppskattad tid:</div>
           <div className="flex items-center justify-center gap-3 font-bold">
             <button aria-label="Minska tid" onClick={() => onChange((t) => ({ ...t, minutes: snap(t.minutes - 5) }))}>−</button>
@@ -279,23 +280,23 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
             <button aria-label="Öka tid" onClick={() => onChange((t) => ({ ...t, minutes: snap(t.minutes + 5) }))}>+</button>
           </div>
         </div>
-        <div className={`rounded-2xl py-2 text-center ${complete ? "bg-frog" : "bg-primary"}`}>
+        <div className={`rounded-2xl py-2 text-center ${complete ? "bg-frog" : late ? "bg-late" : "bg-primary"}`}>
           <div className="text-xs">Utförda:</div>
           <div className="font-bold">{done}/{task.subs.length}</div>
         </div>
       </div>
-      <div className={`rounded-2xl border-2 p-3 ${complete ? "border-frog" : "border-primary"}`}>
+      <div className={`rounded-2xl border-2 p-3 ${complete ? "border-frog" : late ? "border-late" : "border-primary"}`}>
         <div className="mb-2 text-center text-lg">Att göra</div>
         <div className="space-y-2">
           {task.subs.map((s) => (
             <div key={s.id} className={`flex items-center gap-3 text-lg ${s.done ? "text-frog" : ""}`}>
-              <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} size={20} /></button>
+              <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} late={late} size={20} /></button>
               {s.id === editId ? (
                 <input autoFocus value={s.name} placeholder="Sub-task"
                   onChange={(e) => onChange((t) => ({ ...t, subs: t.subs.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x)) }))}
                   onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
                   onBlur={commit}
-                  className={`flex-1 rounded-md border-2 bg-transparent px-1 outline-none ${complete ? "border-frog" : "border-primary"}`} />
+                  className={`flex-1 rounded-md border-2 bg-transparent px-1 outline-none ${complete ? "border-frog" : late ? "border-late" : "border-primary"}`} />
               ) : (
                 <span className="flex-1 truncate">{s.name}</span>
               )}
@@ -303,8 +304,8 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
             </div>
           ))}
         </div>
-        <button onClick={addNew} className={`mx-auto mt-3 flex items-center gap-2 text-xl ${complete ? "text-frog" : "text-primary"}`}>
-          <img src={complete ? smallAddGreen : smallAdd} alt="" className="h-7 w-7" draggable={false} /> Lägg till
+        <button onClick={addNew} className={`mx-auto mt-3 flex items-center gap-2 text-xl ${complete ? "text-frog" : late ? "text-late" : "text-primary"}`}>
+          <img src={complete ? smallAddGreen : late ? smallAddPink : smallAdd} alt="" className="h-7 w-7" draggable={false} /> Lägg till
         </button>
       </div>
       <button onClick={onDelete} className="mt-6 self-center text-sm text-late">Ta bort uppgift</button>
