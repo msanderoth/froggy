@@ -1,5 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import froggyHappy from "@/assets/froggy-happy.svg";
+import froggySad from "@/assets/froggy-sad.svg";
+import timeMarker from "@/assets/time-marker.svg";
+import buttonAdd from "@/assets/button-add.svg";
+import buttonAccept from "@/assets/button-accept.svg";
+import checkChecked from "@/assets/checkbox-checked.svg";
+import checkDefault from "@/assets/checkbox-default.svg";
+import checkStressed from "@/assets/checkbox-stressed.svg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -23,41 +31,8 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const dayKey = (d: Date) => "frog-" + d.toISOString().slice(0, 10);
 const snap = (m: number) => Math.max(5, Math.round(m / 5) * 5);
 
-function Frog({ sleepy }: { sleepy?: boolean }) {
-  const rows = [
-    "..DDD....DDD..",
-    ".DLLLD..DLLLD.",
-    ".DLWDLDDLDWLD.",
-    "DLLLLLLLLLLLLD",
-    "DLLLLLLLLLLLLD",
-    ".DLLDLLLLDLLD.",
-    "..DLLDDDDLLD..",
-    ".DLDLLLLLLDLD.",
-    "DLLDLLLLLLDLLD",
-    "DLLLDLLLLDLLLD",
-    ".DDDDD..DDDDD.",
-  ];
-  const s = 6;
-  return (
-    <svg width={14 * s} height={11 * s} viewBox={`0 0 ${14 * s} ${11 * s}`} shapeRendering="crispEdges">
-      {rows.flatMap((r, y) =>
-        [...r].map((c, x) => {
-          if (c === ".") return null;
-          let fill = c === "D" ? "var(--frog)" : c === "W" ? (sleepy ? "var(--frog)" : "var(--card)") : "var(--frog-light)";
-          return <rect key={`${x}-${y}`} x={x * s} y={y * s} width={s} height={s} fill={fill} />;
-        }),
-      )}
-      {sleepy && <><rect x={2 * s} y={5 * s} width={s} height={s} fill="var(--late-bg)" /><rect x={11 * s} y={5 * s} width={s} height={s} fill="var(--late-bg)" /></>}
-    </svg>
-  );
-}
-
-function Circle({ done, late }: { done: boolean; late?: boolean }) {
-  return (
-    <span
-      className={`inline-block h-4 w-4 shrink-0 rounded-full border-2 ${done ? "border-frog bg-frog" : late ? "border-late" : "border-primary"}`}
-    />
-  );
+function Circle({ done, late, size = 16 }: { done: boolean; late?: boolean; size?: number }) {
+  return <img src={done ? checkChecked : late ? checkStressed : checkDefault} alt="" width={size} height={size} className="shrink-0" draggable={false} />;
 }
 
 function App() {
@@ -177,7 +152,7 @@ function App() {
 
   return (
     <div className="mx-auto flex h-dvh max-w-md flex-col items-center px-3 pt-4 select-none">
-      <div className="relative z-10 -mb-3 self-end mr-14"><Frog sleepy={anyLate} /></div>
+      <div className="relative z-10 -mb-3 self-end mr-14"><img src={anyLate ? froggySad : froggyHappy} alt={anyLate ? "Ledsen groda" : "Glad groda"} className="h-20 w-auto" draggable={false} /></div>
       <div className="relative flex w-full flex-1 flex-col overflow-hidden rounded-t-[2.5rem] bg-panel">
         <div className="flex items-center justify-center gap-6 py-4 text-xl font-bold">
           <button aria-label="Föregående dag" onClick={() => shift(-1)} className="px-2">‹</button>
@@ -201,7 +176,7 @@ function App() {
               );
             })}
             {isToday && nowMin >= DAY_START && (
-              <div className="absolute left-6 h-3 w-4 bg-frog" style={{ top: nowY + gapAdj - 6, clipPath: "polygon(0 0,100% 50%,0 100%,30% 50%)" }} />
+              <img src={timeMarker} alt="Nu" className="absolute left-[1.6rem] h-8 w-8" style={{ top: nowY + gapAdj - 16 }} draggable={false} />
             )}
             {layout.map(({ t, top, h }, i) => {
               const done = t.subs.filter((s) => s.done).length;
@@ -233,7 +208,7 @@ function App() {
                     ))}
                   </div>
                   {complete && (
-                    <div className="absolute right-6 top-1/2 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border-4 border-frog text-2xl text-frog">✓</div>
+                    <img src={buttonAccept} alt="Klar" className="absolute right-6 top-1/2 h-14 w-14 -translate-y-1/2" draggable={false} />
                   )}
                   <div
                     onPointerDown={(e) => onDown(e, t.id, "resize")}
@@ -247,7 +222,7 @@ function App() {
             })}
           </div>
         </div>
-        <button aria-label="Ny uppgift" onClick={addTask} className="absolute bottom-5 right-5 flex h-14 w-14 items-center justify-center rounded-full border-4 border-frog bg-frog-light text-3xl font-bold text-frog">+</button>
+        <button aria-label="Ny uppgift" onClick={addTask} className="absolute bottom-5 right-5"><img src={buttonAdd} alt="" className="h-16 w-16" draggable={false} /></button>
         {open && <Detail task={open} onChange={(f) => update(open.id, f)} onClose={() => setOpenId(null)} onDelete={() => { setTasks((ts) => ts.filter((t) => t.id !== open.id)); setOpenId(null); }} />}
       </div>
     </div>
@@ -303,7 +278,7 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
         <div className="space-y-2">
           {task.subs.map((s) => (
             <div key={s.id} className={`flex items-center gap-3 text-lg ${s.done ? "text-frog" : ""}`}>
-              <button aria-label="Bocka av" onClick={() => toggle(s.id)}><span className={`block h-5 w-5 rounded-full border-2 ${s.done ? "border-frog bg-frog" : "border-primary"}`} /></button>
+              <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} size={20} /></button>
               <span className="flex-1 truncate">{s.name}</span>
               <button aria-label="Ta bort" onClick={() => onChange((t) => ({ ...t, subs: t.subs.filter((x) => x.id !== s.id) }))} className="text-sm text-muted-foreground">✕</button>
             </div>
@@ -320,7 +295,7 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
         )}
       </div>
       <button onClick={onDelete} className="mt-6 self-center text-sm text-late">Ta bort uppgift</button>
-      <button aria-label="Klar" onClick={onClose} className="absolute bottom-5 right-5 flex h-14 w-14 items-center justify-center rounded-full border-4 border-frog bg-frog-light text-2xl font-bold text-frog">✓</button>
+      <button aria-label="Klar" onClick={onClose} className="absolute bottom-5 right-5"><img src={buttonAccept} alt="" className="h-14 w-14" draggable={false} /></button>
     </div>
   );
 }
