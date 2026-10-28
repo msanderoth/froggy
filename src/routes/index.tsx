@@ -40,6 +40,16 @@ export const placeNew = (ts: Pick<Task, "start" | "minutes">[], at: number, len:
   }
   return st;
 };
+// cards never overlap: a card dropped onto another slides below it, and cards after it shift down too
+export const resolveOverlaps = (ts: Task[]) => {
+  const sorted = [...ts].sort((a, b) => a.start - b.start);
+  let cursor = -Infinity;
+  return sorted.map((t) => {
+    const start = Math.max(t.start, cursor);
+    cursor = start + t.minutes;
+    return start === t.start ? t : { ...t, start };
+  });
+};
 // older saved lists had no start time: place them back to back
 const migrate = (ts: Task[]) => { let c = DAY_START; return ts.map((t) => { const st = typeof t.start === "number" ? t.start : c; c = st + t.minutes; return { ...t, start: st }; }); };
 
@@ -117,7 +127,7 @@ function App() {
   const onUp = () => {
     const d = drag.current;
     drag.current = null;
-    if (d?.moved) setTasks((ts) => [...ts].sort((x, y) => x.start - y.start));
+    if (d?.moved) setTasks((ts) => resolveOverlaps(ts));
     if (d && !d.moved && d.mode === "move") setOpenId(d.id);
   };
 
