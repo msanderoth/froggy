@@ -195,11 +195,9 @@ function App() {
                     <span className="truncate text-lg font-semibold">{t.name}</span>
                     <div className="flex shrink-0 items-center gap-1.5">
                       <span className="text-xs text-muted-foreground">{fmtTime(t.minutes)}</span>
-                      {!complete && (
-                        <span className={`rounded-full px-2 text-xs text-primary-foreground ${isLate ? "bg-late" : "bg-primary"}`}>
-                          {done}/{t.subs.length}
-                        </span>
-                      )}
+                      <span className={`rounded-full px-2 text-xs text-primary-foreground ${complete ? "bg-frog-mid" : isLate ? "bg-late" : "bg-primary"}`}>
+                        {done}/{t.subs.length}
+                      </span>
                     </div>
                   </div>
                   <div className="mt-1 space-y-1.5" style={{ maskImage: "linear-gradient(to bottom, black 70%, transparent)" }}>
