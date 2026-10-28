@@ -232,8 +232,7 @@ function App() {
 
 function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (f: (t: Task) => Task) => void; onClose: () => void; onDelete: () => void }) {
   const [editName, setEditName] = useState(false);
-  const [adding, setAdding] = useState("");
-  const [isAdding, setIsAdding] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const done = task.subs.filter((s) => s.done).length;
   const toggle = (id: string) =>
     onChange((t) => {
@@ -245,9 +244,16 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
       const open = rest.filter((x) => !x.done);
       return { ...t, subs: [...open, ns, ...rest.filter((x) => x.done)] };
     });
-  const add = () => {
-    if (adding.trim()) onChange((t) => ({ ...t, subs: [...t.subs.filter((s) => !s.done), { id: uid(), name: adding.trim(), done: false }, ...t.subs.filter((s) => s.done)] }));
-    setAdding("");
+  const addNew = () => {
+    const id = uid();
+    onChange((t) => ({ ...t, subs: [...t.subs.filter((s) => !s.done), { id, name: "", done: false }, ...t.subs.filter((s) => s.done)] }));
+    setEditId(id);
+  };
+  const commit = () => {
+    if (editId === null) return;
+    const name = task.subs.find((s) => s.id === editId)?.name.trim() ?? "";
+    if (!name) onChange((t) => ({ ...t, subs: t.subs.filter((s) => s.id !== editId) }));
+    setEditId(null);
   };
   return (
     <div className="absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-t-[2.5rem] bg-card px-4 pt-6 pb-24 animate-in slide-in-from-bottom-4 fade-in">
