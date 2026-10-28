@@ -31,6 +31,15 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const dayKey = (d: Date) => "frog-" + d.toISOString().slice(0, 10);
 const snap = (m: number) => Math.max(5, Math.round(m / 5) * 5);
 const snapStart = (m: number) => Math.min(24 * 60 - 5, Math.max(DAY_START, Math.round(m / 5) * 5));
+// new task goes at the given time; if that slot is taken, it moves below the task already there
+export const placeNew = (ts: Pick<Task, "start" | "minutes">[], at: number, len: number) => {
+  let st = Math.max(DAY_START, Math.floor(at / 5) * 5);
+  for (let moved = true; moved; ) {
+    moved = false;
+    for (const t of ts) if (st < t.start + t.minutes && t.start < st + len) { st = t.start + t.minutes; moved = true; }
+  }
+  return st;
+};
 // older saved lists had no start time: place them back to back
 const migrate = (ts: Task[]) => { let c = DAY_START; return ts.map((t) => { const st = typeof t.start === "number" ? t.start : c; c = st + t.minutes; return { ...t, start: st }; }); };
 
@@ -102,8 +111,7 @@ function App() {
   };
 
   const addTask = () => {
-    const base = isToday ? Math.max(lastEnd, snapStart(nowMin)) : lastEnd;
-    const t: Task = { id: uid(), name: "Ny uppgift", minutes: 30, start: snapStart(base), subs: [] };
+    const t: Task = { id: uid(), name: "Ny uppgift", minutes: 30, start: placeNew(tasks, isToday ? nowMin : DAY_START, 30), subs: [] };
     setTasks((ts) => [...ts, t]);
     setOpenId(t.id);
   };
