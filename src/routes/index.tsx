@@ -211,7 +211,7 @@ function App() {
                     ))}
                   </div>
                   {complete && (
-                    <img src={buttonAccept} alt="Klar" className="absolute right-6 top-1/2 h-14 w-14 -translate-y-1/2" draggable={false} />
+                    <img src={buttonAccept} alt="Klar" className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2" draggable={false} />
                   )}
                   <div
                     onPointerDown={(e) => onDown(e, t.id, "resize")}
