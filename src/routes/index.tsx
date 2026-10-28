@@ -304,7 +304,7 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
             </div>
           ))}
         </div>
-        <button onClick={addNew} className={`mx-auto mt-3 flex items-center gap-2 text-xl ${complete ? "text-frog" : late ? "text-late" : "text-primary"}`}>
+        <button onClick={addNew} className={`mx-auto mt-3 flex items-center gap-2 text-[28px] ${complete ? "text-frog" : late ? "text-late" : "text-primary"}`}>
           <img src={complete ? smallAddGreen : late ? smallAddPink : smallAdd} alt="" className="h-7 w-7" draggable={false} /> Lägg till
         </button>
       </div>
