@@ -196,7 +196,7 @@ function App() {
                   style={{ top: top + GAP / 2, height: h - GAP }}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-lg font-semibold">{t.name}</span>
+                    <span className="truncate text-[20px] font-semibold">{t.name}</span>
                     <div className="flex shrink-0 items-center gap-1.5">
                       <span className="text-xs text-muted-foreground">{fmtTime(t.minutes)}</span>
                       <span className={`rounded-full px-2 py-1 text-[12px] leading-none text-primary-foreground ${complete ? "bg-frog-mid" : isLate ? "bg-late" : "bg-primary"}`}>
