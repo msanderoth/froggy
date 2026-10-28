@@ -255,8 +255,9 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
     if (!name) onChange((t) => ({ ...t, subs: t.subs.filter((s) => s.id !== editId) }));
     setEditId(null);
   };
+  const complete = task.subs.length > 0 && done === task.subs.length;
   return (
-    <div className="absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-t-[2.5rem] bg-card px-4 pt-6 pb-24 animate-in slide-in-from-bottom-4 fade-in">
+    <div className={`absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-t-[2.5rem] px-4 pt-6 pb-24 animate-in slide-in-from-bottom-4 fade-in ${complete ? "bg-frog-light" : "bg-card"}`}>
       <div className="relative mb-5 flex items-center justify-center">
         {editName ? (
           <input autoFocus value={task.name} onChange={(e) => onChange((t) => ({ ...t, name: e.target.value }))} onBlur={() => setEditName(false)} onKeyDown={(e) => e.key === "Enter" && setEditName(false)}
