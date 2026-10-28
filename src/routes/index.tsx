@@ -174,7 +174,7 @@ function App() {
             {Array.from({ length: hours }, (_, h) => {
               const y = h * 60 * PX_PER_MIN;
               return (
-                <div key={h} className="absolute left-3 text-xs" style={{ top: y - 2 }}>
+                <div key={h} className="absolute left-3 text-[16px]" style={{ top: y - 2 }}>
                   {String(8 + h).padStart(2, "0")}
                 </div>
               );
