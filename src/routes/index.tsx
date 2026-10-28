@@ -286,20 +286,22 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
           {task.subs.map((s) => (
             <div key={s.id} className={`flex items-center gap-3 text-lg ${s.done ? "text-frog" : ""}`}>
               <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} size={20} /></button>
-              <span className="flex-1 truncate">{s.name}</span>
+              {s.id === editId ? (
+                <input autoFocus value={s.name} placeholder="Sub-task"
+                  onChange={(e) => onChange((t) => ({ ...t, subs: t.subs.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x)) }))}
+                  onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
+                  onBlur={commit}
+                  className="flex-1 rounded-md border-2 border-primary bg-transparent px-1 outline-none" />
+              ) : (
+                <span className="flex-1 truncate">{s.name}</span>
+              )}
               <button aria-label="Ta bort" onClick={() => onChange((t) => ({ ...t, subs: t.subs.filter((x) => x.id !== s.id) }))} className="text-sm text-muted-foreground">✕</button>
             </div>
           ))}
         </div>
-        {isAdding ? (
-          <input autoFocus value={adding} placeholder="Sub-task" onChange={(e) => setAdding(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") add(); }} onBlur={() => { add(); setIsAdding(false); }}
-            className="mt-3 w-full rounded-lg border-2 border-primary bg-transparent px-2 py-1 text-lg outline-none" />
-        ) : (
-          <button onClick={() => setIsAdding(true)} className="mx-auto mt-3 flex items-center gap-2 text-xl">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-primary text-primary">+</span> Lägg till
-          </button>
-        )}
+        <button onClick={addNew} className="mx-auto mt-3 flex items-center gap-2 text-xl">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-primary text-primary">+</span> Lägg till
+        </button>
       </div>
       <button onClick={onDelete} className="mt-6 self-center text-sm text-late">Ta bort uppgift</button>
       <button aria-label="Klar" onClick={onClose} className="absolute bottom-5 right-5"><img src={buttonAccept} alt="" className="h-14 w-14" draggable={false} /></button>
