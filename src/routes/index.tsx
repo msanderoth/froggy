@@ -232,8 +232,7 @@ function App() {
 
 function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (f: (t: Task) => Task) => void; onClose: () => void; onDelete: () => void }) {
   const [editName, setEditName] = useState(false);
-  const [adding, setAdding] = useState("");
-  const [isAdding, setIsAdding] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const done = task.subs.filter((s) => s.done).length;
   const toggle = (id: string) =>
     onChange((t) => {
@@ -245,9 +244,16 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
       const open = rest.filter((x) => !x.done);
       return { ...t, subs: [...open, ns, ...rest.filter((x) => x.done)] };
     });
-  const add = () => {
-    if (adding.trim()) onChange((t) => ({ ...t, subs: [...t.subs.filter((s) => !s.done), { id: uid(), name: adding.trim(), done: false }, ...t.subs.filter((s) => s.done)] }));
-    setAdding("");
+  const addNew = () => {
+    const id = uid();
+    onChange((t) => ({ ...t, subs: [...t.subs.filter((s) => !s.done), { id, name: "", done: false }, ...t.subs.filter((s) => s.done)] }));
+    setEditId(id);
+  };
+  const commit = () => {
+    if (editId === null) return;
+    const name = task.subs.find((s) => s.id === editId)?.name.trim() ?? "";
+    if (!name) onChange((t) => ({ ...t, subs: t.subs.filter((s) => s.id !== editId) }));
+    setEditId(null);
   };
   return (
     <div className="absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-t-[2.5rem] bg-card px-4 pt-6 pb-24 animate-in slide-in-from-bottom-4 fade-in">
@@ -280,20 +286,22 @@ function Detail({ task, onChange, onClose, onDelete }: { task: Task; onChange: (
           {task.subs.map((s) => (
             <div key={s.id} className={`flex items-center gap-3 text-lg ${s.done ? "text-frog" : ""}`}>
               <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} size={20} /></button>
-              <span className="flex-1 truncate">{s.name}</span>
+              {s.id === editId ? (
+                <input autoFocus value={s.name} placeholder="Sub-task"
+                  onChange={(e) => onChange((t) => ({ ...t, subs: t.subs.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x)) }))}
+                  onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
+                  onBlur={commit}
+                  className="flex-1 rounded-md border-2 border-primary bg-transparent px-1 outline-none" />
+              ) : (
+                <span className="flex-1 truncate">{s.name}</span>
+              )}
               <button aria-label="Ta bort" onClick={() => onChange((t) => ({ ...t, subs: t.subs.filter((x) => x.id !== s.id) }))} className="text-sm text-muted-foreground">✕</button>
             </div>
           ))}
         </div>
-        {isAdding ? (
-          <input autoFocus value={adding} placeholder="Sub-task" onChange={(e) => setAdding(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") add(); }} onBlur={() => { add(); setIsAdding(false); }}
-            className="mt-3 w-full rounded-lg border-2 border-primary bg-transparent px-2 py-1 text-lg outline-none" />
-        ) : (
-          <button onClick={() => setIsAdding(true)} className="mx-auto mt-3 flex items-center gap-2 text-xl">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-primary text-primary">+</span> Lägg till
-          </button>
-        )}
+        <button onClick={addNew} className="mx-auto mt-3 flex items-center gap-2 text-xl">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-primary text-primary">+</span> Lägg till
+        </button>
       </div>
       <button onClick={onDelete} className="mt-6 self-center text-sm text-late">Ta bort uppgift</button>
       <button aria-label="Klar" onClick={onClose} className="absolute bottom-5 right-5"><img src={buttonAccept} alt="" className="h-14 w-14" draggable={false} /></button>
