@@ -63,9 +63,20 @@ function App() {
   useEffect(() => {
     if (loaded) localStorage.setItem(dayKey(date), JSON.stringify(tasks));
   }, [tasks, loaded, date]);
+  // keep the now-marker on the actual clock: tick every second and resync
+  // whenever the app becomes visible again (timers pause in background)
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 30000);
-    return () => clearInterval(t);
+    const tick = () => setNow(new Date());
+    tick();
+    const iv = setInterval(tick, 1000);
+    const onVis = () => { if (document.visibilityState === "visible") tick(); };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onVis);
+    return () => {
+      clearInterval(iv);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onVis);
+    };
   }, []);
 
   const isToday = dayKey(date) === dayKey(now);
