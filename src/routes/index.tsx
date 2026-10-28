@@ -261,11 +261,11 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
   };
   const complete = task.subs.length > 0 && done === task.subs.length;
   return (
-    <div className={`absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-t-[2.5rem] px-4 pt-6 pb-24 animate-in slide-in-from-bottom-4 fade-in ${complete ? "bg-frog-light" : "bg-card"}`}>
+    <div className={`absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-t-[2.5rem] px-4 pt-6 pb-24 animate-in slide-in-from-bottom-4 fade-in ${complete ? "bg-frog-light" : late ? "bg-late-bg" : "bg-card"}`}>
       <div className="relative mb-5 flex items-center justify-center">
         {editName ? (
           <input autoFocus value={task.name} onChange={(e) => onChange((t) => ({ ...t, name: e.target.value }))} onBlur={() => setEditName(false)} onKeyDown={(e) => e.key === "Enter" && setEditName(false)}
-            className={`w-3/4 rounded-lg border-2 bg-transparent px-2 text-center text-xl font-bold outline-none ${complete ? "border-frog" : "border-primary"}`} />
+            className={`w-3/4 rounded-lg border-2 bg-transparent px-2 text-center text-xl font-bold outline-none ${complete ? "border-frog" : late ? "border-late" : "border-primary"}`} />
         ) : (
           <button onClick={() => setEditName(true)} className="text-xl font-bold">{task.name}</button>
         )}
