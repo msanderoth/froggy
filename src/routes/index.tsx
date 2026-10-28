@@ -8,6 +8,7 @@ import smallAdd from "@/assets/small-add.svg";
 import smallAddGreen from "@/assets/small-add-green.svg";
 import smallAddPink from "@/assets/small-add-pink.svg";
 import exitSvg from "@/assets/exit.svg";
+import exit2Svg from "@/assets/exit-2.svg";
 import buttonAccept from "@/assets/button-accept.svg";
 import checkChecked from "@/assets/checkbox-checked.svg";
 import checkDefault from "@/assets/checkbox-default.svg";
@@ -300,7 +301,7 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
               ) : (
                 <span className="flex-1 truncate">{s.name}</span>
               )}
-              <button aria-label="Ta bort" onClick={() => onChange((t) => ({ ...t, subs: t.subs.filter((x) => x.id !== s.id) }))} className="text-[20px] leading-none text-muted-foreground">✕</button>
+              <button aria-label="Ta bort" onClick={() => onChange((t) => ({ ...t, subs: t.subs.filter((x) => x.id !== s.id) }))} className="shrink-0"><img src={exit2Svg} alt="" className="h-5 w-5" draggable={false} /></button>
             </div>
           ))}
         </div>
