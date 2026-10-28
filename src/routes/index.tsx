@@ -22,7 +22,7 @@ export const Route = createFileRoute("/")({
 });
 
 type Sub = { id: string; name: string; done: boolean };
-type Task = { id: string; name: string; minutes: number; start: number; subs: Sub[] };
+export type Task = { id: string; name: string; minutes: number; start: number; subs: Sub[] };
 
 const PX_PER_MIN = 2.9;
 const DAY_START = 8 * 60;
@@ -31,6 +31,8 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const dayKey = (d: Date) => "frog-" + d.toISOString().slice(0, 10);
 const snap = (m: number) => Math.max(5, Math.round(m / 5) * 5);
 const snapStart = (m: number) => Math.min(24 * 60 - 5, Math.max(DAY_START, Math.round(m / 5) * 5));
+// estimated time on the card: "45 min" or "1 h 30 min"
+const fmtTime = (m: number) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}`);
 // new task goes at the given time; if that slot is taken, it moves below the task already there
 export const placeNew = (ts: Pick<Task, "start" | "minutes">[], at: number, len: number) => {
   let st = Math.max(DAY_START, Math.floor(at / 5) * 5);
@@ -39,6 +41,16 @@ export const placeNew = (ts: Pick<Task, "start" | "minutes">[], at: number, len:
     for (const t of ts) if (st < t.start + t.minutes && t.start < st + len) { st = t.start + t.minutes; moved = true; }
   }
   return st;
+};
+// cards never overlap: a card dropped onto another slides below it, and cards after it shift down too
+export const resolveOverlaps = (ts: Task[]) => {
+  const sorted = [...ts].sort((a, b) => a.start - b.start);
+  let cursor = -Infinity;
+  return sorted.map((t) => {
+    const start = Math.max(t.start, cursor);
+    cursor = start + t.minutes;
+    return start === t.start ? t : { ...t, start };
+  });
 };
 // older saved lists had no start time: place them back to back
 const migrate = (ts: Task[]) => { let c = DAY_START; return ts.map((t) => { const st = typeof t.start === "number" ? t.start : c; c = st + t.minutes; return { ...t, start: st }; }); };
@@ -63,9 +75,20 @@ function App() {
   useEffect(() => {
     if (loaded) localStorage.setItem(dayKey(date), JSON.stringify(tasks));
   }, [tasks, loaded, date]);
+  // keep the now-marker on the actual clock: tick every second and resync
+  // whenever the app becomes visible again (timers pause in background)
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 30000);
-    return () => clearInterval(t);
+    const tick = () => setNow(new Date());
+    tick();
+    const iv = setInterval(tick, 1000);
+    const onVis = () => { if (document.visibilityState === "visible") tick(); };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onVis);
+    return () => {
+      clearInterval(iv);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onVis);
+    };
   }, []);
 
   const isToday = dayKey(date) === dayKey(now);
@@ -106,7 +129,7 @@ function App() {
   const onUp = () => {
     const d = drag.current;
     drag.current = null;
-    if (d?.moved) setTasks((ts) => [...ts].sort((x, y) => x.start - y.start));
+    if (d?.moved) setTasks((ts) => resolveOverlaps(ts));
     if (d && !d.moved && d.mode === "move") setOpenId(d.id);
   };
 
@@ -168,13 +191,16 @@ function App() {
                   className={`absolute left-14 right-3 touch-none overflow-hidden rounded-2xl px-3 pt-2 shadow-sm ${dy ? "z-20 shadow-lg" : "transition-[top]"} ${complete ? "bg-frog-light" : isLate ? "border-2 border-late bg-late-bg" : "bg-card"}`}
                   style={{ top: top + GAP / 2, height: h - GAP }}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-lg font-semibold">{t.name}</span>
-                    {!complete && (
-                      <span className={`rounded-full px-2 text-xs text-primary-foreground ${isLate ? "bg-late" : "bg-primary"}`}>
-                        {done}/{t.subs.length}
-                      </span>
-                    )}
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {!complete && (
+                        <span className={`rounded-full px-2 text-xs text-primary-foreground ${isLate ? "bg-late" : "bg-primary"}`}>
+                          {done}/{t.subs.length}
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">{fmtTime(t.minutes)}</span>
+                    </div>
                   </div>
                   <div className="mt-1 space-y-1.5" style={{ maskImage: "linear-gradient(to bottom, black 70%, transparent)" }}>
                     {sorted.map((s) => (
