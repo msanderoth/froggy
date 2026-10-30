@@ -48,15 +48,19 @@ export const placeNew = (ts: Pick<Task, "start" | "minutes">[], at: number, len:
   }
   return st;
 };
-// cards never overlap: a card dropped onto another slides below it, and cards after it shift down too
-export const resolveOverlaps = (ts: Task[]) => {
-  const sorted = [...ts].sort((a, b) => a.start - b.start);
-  let cursor = -Infinity;
-  return sorted.map((t) => {
-    const start = Math.max(t.start, cursor);
-    cursor = start + t.minutes;
-    return start === t.start ? t : { ...t, start };
-  });
+// moving a card to another day keeps the exact time it had on the old day;
+// cards already on that day slide below it (keeping their own order) if they collide
+export const placeAround = (anchor: Task, others: Task[]) => {
+  const placed: Task[] = [];
+  for (const o of [...others].sort((a, b) => a.start - b.start)) {
+    let st = o.start;
+    for (let moved = true; moved; ) {
+      moved = false;
+      for (const p of [anchor, ...placed]) if (st < p.start + p.minutes && p.start < st + o.minutes) { st = p.start + p.minutes; moved = true; }
+    }
+    placed.push(st === o.start ? o : { ...o, start: st });
+  }
+  return [anchor, ...placed];
 };
 // older saved lists had no start time: place them back to back
 const migrate = (ts: Task[]) => { let c = DAY_START; return ts.map((t) => { const st = typeof t.start === "number" ? t.start : c; c = st + t.minutes; return { ...t, start: st }; }); };
