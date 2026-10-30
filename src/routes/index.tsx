@@ -165,7 +165,7 @@ function App() {
     const target = new Date(curDate.getTime() + dir * 864e5);
     const raw = localStorage.getItem(dayKey(target));
     const other: Task[] = raw ? migrate(JSON.parse(raw)) : [];
-    localStorage.setItem(dayKey(target), JSON.stringify(resolveOverlaps([...other.filter((x) => x.id !== id), t])));
+    localStorage.setItem(dayKey(target), JSON.stringify(placeAround(t, other.filter((x) => x.id !== id))));
     // save the removal on the current day right away: the day switch below
     // means the normal save would otherwise never write it
     const rest = cur.filter((x) => x.id !== id);
