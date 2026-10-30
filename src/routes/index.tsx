@@ -286,6 +286,7 @@ function App() {
             })}
           </div>
         </div>
+        </div>
         <button aria-label="Ny uppgift" onClick={addTask} className="absolute bottom-5 right-5"><img src={buttonAdd} alt="" className="h-16 w-16" draggable={false} /></button>
         {open && <Detail task={open} late={late(tasks.indexOf(open))} onChange={(f) => update(open.id, f)} onClose={() => setOpenId(null)} onDelete={() => { setTasks((ts) => ts.filter((t) => t.id !== open.id)); setOpenId(null); }} />}
       </div>
