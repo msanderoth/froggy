@@ -435,9 +435,33 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
       <div className={`rounded-2xl border-2 p-3 ${complete ? "border-frog" : late ? "border-late" : "border-primary"}`}>
         <div className="mb-2 text-center text-[24px]">Att göra</div>
         <div className="space-y-2">
-          {task.subs.map((s) => (
-            <div key={s.id} className={`flex items-center gap-3 text-[20px] leading-none ${s.done ? "text-frog" : ""}`}>
-              <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} late={late} size={24} /></button>
+          {task.subs.map((s) => {
+            const unchecked = task.subs.filter((x) => !x.done).length;
+            const canDrag = s.done ? task.subs.length - unchecked > 1 : unchecked > 1;
+            const dragging = s.id === dragSubId;
+            return (
+              <div
+                key={s.id}
+                data-sub-row
+                className={`flex items-center gap-3 text-[20px] leading-none ${s.done ? "text-frog" : ""} ${dragging ? "relative z-10 rounded-md bg-card/80 shadow-md" : ""}`}
+                style={dragging ? { transform: `translateY(${dragDy}px)` } : undefined}
+              >
+                {canDrag ? (
+                  <button
+                    type="button"
+                    aria-label="Ändra ordning"
+                    onPointerDown={(e) => onSubDown(e, s.id)}
+                    onPointerMove={onSubMove}
+                    onPointerUp={onSubUp}
+                    onPointerCancel={onSubUp}
+                    className="shrink-0 cursor-grab touch-none text-muted-foreground/50"
+                  >
+                    {grip}
+                  </button>
+                ) : (
+                  <span className="shrink-0 opacity-0">{grip}</span>
+                )}
+                <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} late={late} size={24} /></button>
               {s.id === editId ? (
                 <input autoFocus value={s.name} placeholder="Sub-task"
                   onChange={(e) => onChange((t) => ({ ...t, subs: t.subs.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x)) }))}
