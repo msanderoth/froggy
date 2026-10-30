@@ -238,7 +238,7 @@ function App() {
           <span className="min-w-20 text-center capitalize">{label}</span>
           <button aria-label="Nästa dag" onClick={() => shift(1)} className="px-2">›</button>
         </div>
-        <div ref={scrollRef} className="flex-1 overflow-y-auto pb-28" onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+        <div ref={scrollRef} className="flex-1 overflow-y-auto pb-28" onPointerDown={(e) => { swipe.current = { x: e.clientX, y: e.clientY }; }} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
           <div className="relative" style={{ height: hours * 60 * PX_PER_MIN }}>
             <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-card" />
             {loaded && isToday && nowMin >= DAY_START && (
