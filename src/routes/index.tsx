@@ -58,6 +58,20 @@ export const resolveOverlaps = (ts: Task[]) => {
     return start === t.start ? t : { ...t, start };
   });
 };
+// moving a card to another day keeps the exact time it had on the old day;
+// cards already on that day slide below it (keeping their own order) if they collide
+export const placeAround = (anchor: Task, others: Task[]) => {
+  const placed: Task[] = [];
+  for (const o of [...others].sort((a, b) => a.start - b.start)) {
+    let st = o.start;
+    for (let moved = true; moved; ) {
+      moved = false;
+      for (const p of [anchor, ...placed]) if (st < p.start + p.minutes && p.start < st + o.minutes) { st = p.start + p.minutes; moved = true; }
+    }
+    placed.push(st === o.start ? o : { ...o, start: st });
+  }
+  return [anchor, ...placed];
+};
 // older saved lists had no start time: place them back to back
 const migrate = (ts: Task[]) => { let c = DAY_START; return ts.map((t) => { const st = typeof t.start === "number" ? t.start : c; c = st + t.minutes; return { ...t, start: st }; }); };
 
@@ -151,7 +165,7 @@ function App() {
     const target = new Date(curDate.getTime() + dir * 864e5);
     const raw = localStorage.getItem(dayKey(target));
     const other: Task[] = raw ? migrate(JSON.parse(raw)) : [];
-    localStorage.setItem(dayKey(target), JSON.stringify(resolveOverlaps([...other.filter((x) => x.id !== id), t])));
+    localStorage.setItem(dayKey(target), JSON.stringify(placeAround(t, other.filter((x) => x.id !== id))));
     // save the removal on the current day right away: the day switch below
     // means the normal save would otherwise never write it
     const rest = cur.filter((x) => x.id !== id);
