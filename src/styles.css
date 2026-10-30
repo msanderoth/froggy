@@ -50,3 +50,11 @@
 }
 .animate-slide-in-right { animation: slide-in-right 0.25s ease-out; }
 .animate-slide-in-left { animation: slide-in-left 0.25s ease-out; }
+
+img[src$=".svg"], img {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+svg {
+  shape-rendering: crispEdges;
+}
