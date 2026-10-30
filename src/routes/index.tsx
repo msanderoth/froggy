@@ -213,7 +213,7 @@ function App() {
                   key={t.id}
                   onPointerDown={(e) => onDown(e, t.id, "move")}
                   className={`absolute left-14 right-3 touch-none overflow-hidden rounded-2xl px-3 pt-2 shadow-sm ${dy ? "z-20 shadow-lg" : "transition-[top]"} ${complete ? "bg-frog-light" : isLate ? "border-2 border-late bg-late-bg" : "bg-card"}`}
-                  style={{ top: top + GAP / 2, height: h - GAP }}
+                  style={{ top: top + GAP / 2, height: h - GAP, transform: dy && dragDx ? `translateX(${dragDx}px)` : undefined }}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-[20px] font-semibold">{t.name}</span>
