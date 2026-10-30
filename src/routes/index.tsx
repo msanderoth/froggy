@@ -102,7 +102,12 @@ function App() {
 
   const isToday = dayKey(date) === dayKey(now);
   const nowMin = now.getHours() * 60 + now.getMinutes();
-  const shift = (n: number) => setDate((d) => new Date(d.getTime() + n * 864e5));
+  // which way the day switch should glide: 1 = in from the right, -1 = from the left
+  const [slideDir, setSlideDir] = useState<0 | 1 | -1>(0);
+  const shift = (n: number) => {
+    setSlideDir(n > 0 ? 1 : -1);
+    setDate((d) => new Date(d.getTime() + n * 864e5));
+  };
   const label = isToday ? "Idag" : date.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short" });
 
   const layout = tasks.map((t) => ({ t, top: (t.start - DAY_START) * PX_PER_MIN, h: t.minutes * PX_PER_MIN }));
@@ -140,6 +145,7 @@ function App() {
     // means the normal save would otherwise never write it
     localStorage.setItem(dayKey(date), JSON.stringify(tasks.filter((x) => x.id !== id)));
     setTasks((ts) => ts.filter((x) => x.id !== id));
+    setSlideDir(dir > 0 ? 1 : -1);
     setDate(target);
   };
 
