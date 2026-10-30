@@ -214,7 +214,7 @@ function App() {
   }, [loaded, isToday]);
   return (
     <div className="mx-auto flex h-dvh max-w-md flex-col items-center px-3 pt-4 pb-6 select-none">
-      <div className="relative z-10 -mb-3 flex w-full items-end justify-between pl-6 pr-14">
+      <div className="relative z-10 -mb-3 flex w-full items-center justify-between pl-6 pr-14">
         <img src={froggyLogo} alt="Froggy" className="h-10 w-auto" draggable={false} />
         <img src={anyLate ? froggySad : froggyHappy} alt={anyLate ? "Ledsen groda" : "Glad groda"} className="h-20 w-auto" draggable={false} />
       </div>
