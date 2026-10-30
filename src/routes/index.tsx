@@ -370,7 +370,7 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
   };
   const complete = task.subs.length > 0 && done === task.subs.length;
   // drag a sub-task by its grip to change the order; open items stay above checked ones
-  const subDrag = useRef<{ id: string; startY: number; stride: number } | null>(null);
+  const subDrag = useRef<{ id: string; startY: number; startX: number; stride: number; active: boolean } | null>(null);
   const [dragSubId, setDragSubId] = useState<string | null>(null);
   const [dragDy, setDragDy] = useState(0);
   const onSubDown = (e: React.PointerEvent, id: string) => {
@@ -378,12 +378,15 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const row = (e.currentTarget as HTMLElement).closest("[data-sub-row]") as HTMLElement | null;
     if (!row) return;
-    subDrag.current = { id, startY: e.clientY, stride: row.offsetHeight + 8 };
-    setDragSubId(id);
+    subDrag.current = { id, startY: e.clientY, startX: e.clientX, stride: row.offsetHeight + 8, active: false };
   };
   const onSubMove = (e: React.PointerEvent) => {
     const d = subDrag.current;
     if (!d) return;
+    // a plain tap never enters drag mode: the pointer must move first
+    if (!d.active && Math.abs(e.clientY - d.startY) < 6 && Math.abs(e.clientX - d.startX) < 6) return;
+    d.active = true;
+    setDragSubId(d.id);
     const from = task.subs.findIndex((s) => s.id === d.id);
     if (from < 0) return;
     const unchecked = task.subs.filter((s) => !s.done).length;
