@@ -102,7 +102,12 @@ function App() {
 
   const isToday = dayKey(date) === dayKey(now);
   const nowMin = now.getHours() * 60 + now.getMinutes();
-  const shift = (n: number) => setDate((d) => new Date(d.getTime() + n * 864e5));
+  // which way the day switch should glide: 1 = in from the right, -1 = from the left
+  const [slideDir, setSlideDir] = useState<0 | 1 | -1>(0);
+  const shift = (n: number) => {
+    setSlideDir(n > 0 ? 1 : -1);
+    setDate((d) => new Date(d.getTime() + n * 864e5));
+  };
   const label = isToday ? "Idag" : date.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short" });
 
   const layout = tasks.map((t) => ({ t, top: (t.start - DAY_START) * PX_PER_MIN, h: t.minutes * PX_PER_MIN }));
@@ -140,6 +145,7 @@ function App() {
     // means the normal save would otherwise never write it
     localStorage.setItem(dayKey(date), JSON.stringify(tasks.filter((x) => x.id !== id)));
     setTasks((ts) => ts.filter((x) => x.id !== id));
+    setSlideDir(dir > 0 ? 1 : -1);
     setDate(target);
   };
 
@@ -209,6 +215,10 @@ function App() {
     <div className="mx-auto flex h-dvh max-w-md flex-col items-center px-3 pt-4 pb-6 select-none">
       <div className="relative z-10 -mb-3 self-end mr-14"><img src={anyLate ? froggySad : froggyHappy} alt={anyLate ? "Ledsen groda" : "Glad groda"} className="h-20 w-auto" draggable={false} /></div>
       <div className="relative flex w-full flex-1 flex-col overflow-hidden rounded-[2.5rem] bg-panel">
+        <div
+          key={dayKey(date)}
+          className={`flex flex-1 flex-col overflow-hidden ${slideDir === 1 ? "animate-slide-in-right" : slideDir === -1 ? "animate-slide-in-left" : ""}`}
+        >
         <div className="flex items-center justify-center gap-6 py-4 text-xl font-bold">
           <button aria-label="Föregående dag" onClick={() => shift(-1)} className="px-2">‹</button>
           <span className="min-w-20 text-center capitalize">{label}</span>
@@ -275,6 +285,7 @@ function App() {
               );
             })}
           </div>
+        </div>
         </div>
         <button aria-label="Ny uppgift" onClick={addTask} className="absolute bottom-5 right-5"><img src={buttonAdd} alt="" className="h-16 w-16" draggable={false} /></button>
         {open && <Detail task={open} late={late(tasks.indexOf(open))} onChange={(f) => update(open.id, f)} onClose={() => setOpenId(null)} onDelete={() => { setTasks((ts) => ts.filter((t) => t.id !== open.id)); setOpenId(null); }} />}
