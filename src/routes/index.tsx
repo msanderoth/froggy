@@ -449,7 +449,15 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
                   onBlur={commit}
                   className={`flex-1 rounded-md border-2 bg-transparent px-1 outline-none ${complete ? "border-frog" : late ? "border-late" : "border-primary"}`} />
               ) : (
-                <span className="flex-1 truncate">{s.name}</span>
+                <span
+                  onPointerDown={(e) => onSubDown(e, s.id)}
+                  onPointerMove={onSubMove}
+                  onPointerUp={onSubUp}
+                  onPointerCancel={onSubUp}
+                  className={`flex-1 touch-none ${canDrag ? "cursor-grab" : ""}`}
+                >
+                  {s.name}
+                </span>
               )}
               <button aria-label="Ta bort" onClick={() => onChange((t) => ({ ...t, subs: t.subs.filter((x) => x.id !== s.id) }))} className="shrink-0"><img src={exit2Svg} alt="" className="h-5 w-5" draggable={false} /></button>
               </div>
