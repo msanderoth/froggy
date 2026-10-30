@@ -102,8 +102,8 @@ export const subDragPreview = (rows: SubRowBounds[], id: string, delta: number) 
   let target = from;
   for (const item of group) {
     const index = rows.indexOf(item);
-    if (index > from && center > item.top + item.height / 2) target = index;
-    if (index < from && center < item.top + item.height / 2) { target = index; break; }
+    if (index > from && center >= item.top + item.height / 2) target = index;
+    if (index < from && center <= item.top + item.height / 2) { target = index; break; }
   }
   const order = [...rows];
   order.splice(from, 1);

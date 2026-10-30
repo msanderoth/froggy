@@ -34,6 +34,7 @@ describe("subDragPreview", () => {
   ];
   it("keeps the dragged row inside its group at both list edges", () => {
     expect(subDragPreview(rows, "a", 1000).offsets["a"]).toBe(88);
+    expect(subDragPreview(rows, "a", 1000).target).toBe(2);
     expect(subDragPreview(rows, "c", -1000).offsets["c"]).toBe(-88);
     expect(subDragPreview(rows, "b", 1000).offsets["b"]).toBe(32);
     expect(subDragPreview(rows, "d", -1000).offsets["d"]).toBe(0);
