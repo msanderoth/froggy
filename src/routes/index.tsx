@@ -184,14 +184,24 @@ function App() {
       } else if (!dir) clearEdge();
     }
   };
-  const onUp = () => {
+  const onUp = (e?: React.PointerEvent) => {
     const d = drag.current;
     drag.current = null;
     clearEdge();
     setDragDx(0);
     if (d?.moved) setTasks((ts) => resolveOverlaps(ts));
     if (d && !d.moved && d.mode === "move") setOpenId(d.id);
+    // swipe on the empty background switches day
+    const s = swipe.current;
+    swipe.current = null;
+    if (!d && s && e) {
+      const dx = e.clientX - s.x;
+      const dy = e.clientY - s.y;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) shift(dx < 0 ? 1 : -1);
+    }
   };
+  // where a background swipe started (card drags stopPropagation, so this stays null for them)
+  const swipe = useRef<{ x: number; y: number } | null>(null);
 
   const addTask = () => {
     const t: Task = { id: uid(), name: "Ny uppgift", minutes: 30, start: placeNew(tasks, isToday ? nowMin : DAY_START, 30), subs: [] };
@@ -228,7 +238,7 @@ function App() {
           <span className="min-w-20 text-center capitalize">{label}</span>
           <button aria-label="Nästa dag" onClick={() => shift(1)} className="px-2">›</button>
         </div>
-        <div ref={scrollRef} className="flex-1 overflow-y-auto pb-28" onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+        <div ref={scrollRef} className="flex-1 overflow-y-auto pb-28" onPointerDown={(e) => { swipe.current = { x: e.clientX, y: e.clientY }; }} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
           <div className="relative" style={{ height: hours * 60 * PX_PER_MIN }}>
             <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-card" />
             {loaded && isToday && nowMin >= DAY_START && (
