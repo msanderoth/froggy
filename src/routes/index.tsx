@@ -369,6 +369,44 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
     setEditId(null);
   };
   const complete = task.subs.length > 0 && done === task.subs.length;
+  // drag a sub-task by its grip to change the order; open items stay above checked ones
+  const subDrag = useRef<{ id: string; startY: number; stride: number } | null>(null);
+  const [dragSubId, setDragSubId] = useState<string | null>(null);
+  const [dragDy, setDragDy] = useState(0);
+  const onSubDown = (e: React.PointerEvent, id: string) => {
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    const row = (e.currentTarget as HTMLElement).closest("[data-sub-row]") as HTMLElement | null;
+    if (!row) return;
+    subDrag.current = { id, startY: e.clientY, stride: row.offsetHeight + 8 };
+    setDragSubId(id);
+  };
+  const onSubMove = (e: React.PointerEvent) => {
+    const d = subDrag.current;
+    if (!d) return;
+    const from = task.subs.findIndex((s) => s.id === d.id);
+    if (from < 0) return;
+    const unchecked = task.subs.filter((s) => !s.done).length;
+    const lo = task.subs[from]!.done ? unchecked : 0;
+    const hi = task.subs[from]!.done ? task.subs.length - 1 : unchecked - 1;
+    if (hi <= lo) { setDragDy(0); return; }
+    const to = Math.min(hi, Math.max(lo, from + Math.round((e.clientY - d.startY) / d.stride)));
+    if (to !== from) {
+      onChange((t) => ({ ...t, subs: moveSub(t.subs, from, to) }));
+      d.startY = e.clientY - (to - from) * d.stride;
+    }
+    setDragDy(e.clientY - d.startY);
+  };
+  const onSubUp = () => {
+    subDrag.current = null;
+    setDragSubId(null);
+    setDragDy(0);
+  };
+  const grip = (
+    <svg width="10" height="16" viewBox="0 0 10 16" className="shrink-0" fill="currentColor" aria-hidden>
+      {[2, 8].map((cx) => [3, 8, 13].map((cy) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.6" />))}
+    </svg>
+  );
   return (
     <div className={`absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-t-[2.5rem] px-4 pt-6 pb-24 animate-in slide-in-from-bottom-4 fade-in ${complete ? "bg-frog-light" : late ? "bg-late-bg" : "bg-card"}`}>
       <div className="relative mb-5 flex items-center justify-center">
