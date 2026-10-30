@@ -248,7 +248,7 @@ function App() {
     <div className="mx-auto flex h-dvh max-w-md flex-col items-center px-3 pt-4 pb-6 select-none">
       <div className="relative z-10 -mb-3 flex w-full items-center justify-between pl-6 pr-6">
         <img src={froggyLogo} alt="Froggy" className="h-[60px] w-auto" draggable={false} />
-        <img src={anyLate ? froggySad : froggyHappy} alt={anyLate ? "Ledsen groda" : "Glad groda"} className={anyLate ? "h-[60.3px] w-[69.6px]" : "h-20 w-[76.5px]"} draggable={false} />
+        <img src={anyLate ? froggySad : froggyHappy} alt={anyLate ? "Ledsen groda" : "Glad groda"} className={anyLate ? "h-20 w-[69.6px]" : "h-20 w-[76.5px]"} draggable={false} />
       </div>
       <div className="relative flex w-full flex-1 flex-col overflow-hidden rounded-[2.5rem] bg-panel">
         <div
