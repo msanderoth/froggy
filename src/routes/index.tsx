@@ -27,7 +27,7 @@ export const Route = createFileRoute("/")({
   component: App,
 });
 
-type Sub = { id: string; name: string; done: boolean };
+export type Sub = { id: string; name: string; done: boolean };
 export type Task = { id: string; name: string; minutes: number; start: number; subs: Sub[] };
 
 const PX_PER_MIN = 2.9;
@@ -70,6 +70,19 @@ export const placeAround = (anchor: Task, others: Task[]) => {
 };
 // older saved lists had no start time: place them back to back
 const migrate = (ts: Task[]) => { let c = DAY_START; return ts.map((t) => { const st = typeof t.start === "number" ? t.start : c; c = st + t.minutes; return { ...t, start: st }; }); };
+// sub-tasks can be reordered by dragging, but only within their own group:
+// open items stay above the checked ones (checked always sink to the bottom)
+export const moveSub = (subs: Sub[], from: number, to: number): Sub[] => {
+  const unchecked = subs.filter((s) => !s.done).length;
+  const lo = subs[from]?.done ? unchecked : 0;
+  const hi = subs[from]?.done ? subs.length - 1 : unchecked - 1;
+  const target = Math.min(hi, Math.max(lo, to));
+  if (target === from) return subs;
+  const arr = [...subs];
+  const [moved] = arr.splice(from, 1);
+  arr.splice(target, 0, moved!);
+  return arr;
+};
 
 function Circle({ done, late, size = 16 }: { done: boolean; late?: boolean; size?: number }) {
   return <img src={done ? checkChecked : late ? checkStressed : checkDefault} alt="" width={size} height={size} className="shrink-0" draggable={false} />;
