@@ -472,8 +472,9 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
                 <span className="flex-1 truncate">{s.name}</span>
               )}
               <button aria-label="Ta bort" onClick={() => onChange((t) => ({ ...t, subs: t.subs.filter((x) => x.id !== s.id) }))} className="shrink-0"><img src={exit2Svg} alt="" className="h-5 w-5" draggable={false} /></button>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
         <button onClick={addNew} className={`mx-auto mt-3 flex items-center gap-2 text-[24px] ${complete ? "text-frog" : late ? "text-late" : "text-primary"}`}>
           <img src={complete ? smallAddGreen : late ? smallAddPink : smallAdd} alt="" className="h-7 w-7" draggable={false} /> Lägg till
