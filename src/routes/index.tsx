@@ -215,6 +215,10 @@ function App() {
     <div className="mx-auto flex h-dvh max-w-md flex-col items-center px-3 pt-4 pb-6 select-none">
       <div className="relative z-10 -mb-3 self-end mr-14"><img src={anyLate ? froggySad : froggyHappy} alt={anyLate ? "Ledsen groda" : "Glad groda"} className="h-20 w-auto" draggable={false} /></div>
       <div className="relative flex w-full flex-1 flex-col overflow-hidden rounded-[2.5rem] bg-panel">
+        <div
+          key={dayKey(date)}
+          className={`flex flex-1 flex-col overflow-hidden ${slideDir === 1 ? "animate-slide-in-right" : slideDir === -1 ? "animate-slide-in-left" : ""}`}
+        >
         <div className="flex items-center justify-center gap-6 py-4 text-xl font-bold">
           <button aria-label="Föregående dag" onClick={() => shift(-1)} className="px-2">‹</button>
           <span className="min-w-20 text-center capitalize">{label}</span>
