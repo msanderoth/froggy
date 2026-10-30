@@ -3,7 +3,7 @@
 @import "tw-animate-css";
 
 @theme inline {
-  --font-pixel: "VT323", monospace;
+  --font-pixel: "Pixelify Sans", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-panel: var(--panel);
