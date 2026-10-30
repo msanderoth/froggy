@@ -80,7 +80,10 @@ function App() {
   useEffect(() => {
     const k = dayKey(date);
     const raw = localStorage.getItem(k);
-    setDay({ key: k, tasks: raw ? migrate(JSON.parse(raw)) : [] });
+    // drop any duplicated cards (same id) left over from older saves
+    const list: Task[] = raw ? migrate(JSON.parse(raw)) : [];
+    const seen = new Set<string>();
+    setDay({ key: k, tasks: list.filter((t) => (seen.has(t.id) ? false : (seen.add(t.id), true))) });
   }, [date]);
   useEffect(() => {
     if (day.key === dayKey(date)) localStorage.setItem(day.key, JSON.stringify(day.tasks));
@@ -135,19 +138,28 @@ function App() {
   useEffect(() => clearEdge, []);
 
   // drag a card sideways to move it to the next or previous day
+  // read the latest state via refs: this runs from a timer whose closure may be stale
+  const latest = useRef({ tasks, date, key: day.key });
+  latest.current = { tasks, date, key: day.key };
+  const moving = useRef(false);
   const moveToDay = (id: string, dir: number) => {
-    const t = tasks.find((x) => x.id === id);
+    const { tasks: cur, date: curDate, key } = latest.current;
+    if (moving.current || key !== dayKey(curDate)) return;
+    const t = cur.find((x) => x.id === id);
     if (!t) return;
-    const target = new Date(date.getTime() + dir * 864e5);
+    moving.current = true;
+    const target = new Date(curDate.getTime() + dir * 864e5);
     const raw = localStorage.getItem(dayKey(target));
     const other: Task[] = raw ? migrate(JSON.parse(raw)) : [];
-    localStorage.setItem(dayKey(target), JSON.stringify(resolveOverlaps([...other, t])));
+    localStorage.setItem(dayKey(target), JSON.stringify(resolveOverlaps([...other.filter((x) => x.id !== id), t])));
     // save the removal on the current day right away: the day switch below
     // means the normal save would otherwise never write it
-    localStorage.setItem(dayKey(date), JSON.stringify(tasks.filter((x) => x.id !== id)));
-    setTasks((ts) => ts.filter((x) => x.id !== id));
+    const rest = cur.filter((x) => x.id !== id);
+    localStorage.setItem(dayKey(curDate), JSON.stringify(rest));
+    setDay({ key: dayKey(curDate), tasks: rest });
     setSlideDir(dir > 0 ? 1 : -1);
     setDate(target);
+    setTimeout(() => { moving.current = false; }, 300);
   };
 
   const onDown = (e: React.PointerEvent, id: string, mode: "move" | "resize") => {
