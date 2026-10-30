@@ -114,28 +114,47 @@ function App() {
   const update = (id: string, f: (t: Task) => Task) => setTasks((ts) => ts.map((t) => (t.id === id ? f(t) : t)));
 
   // drag state
-  const drag = useRef<{ id: string; mode: "move" | "resize"; y0: number; v0: number; moved: boolean } | null>(null);
+  const drag = useRef<{ id: string; mode: "move" | "resize"; x0: number; y0: number; v0: number; moved: boolean } | null>(null);
+  const [dragDx, setDragDx] = useState(0);
+
+  // drag a card sideways to move it to the next or previous day
+  const moveToDay = (id: string, dir: number) => {
+    const t = tasks.find((x) => x.id === id);
+    if (!t) return;
+    const target = new Date(date.getTime() + dir * 864e5);
+    const raw = localStorage.getItem(dayKey(target));
+    const other: Task[] = raw ? migrate(JSON.parse(raw)) : [];
+    localStorage.setItem(dayKey(target), JSON.stringify(resolveOverlaps([...other, t])));
+    setTasks((ts) => ts.filter((x) => x.id !== id));
+    setDate(target);
+  };
 
   const onDown = (e: React.PointerEvent, id: string, mode: "move" | "resize") => {
     e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     const t = tasks.find((x) => x.id === id)!;
-    drag.current = { id, mode, y0: e.clientY, v0: mode === "move" ? t.start : t.minutes, moved: false };
+    drag.current = { id, mode, x0: e.clientX, y0: e.clientY, v0: mode === "move" ? t.start : t.minutes, moved: false };
   };
   const onMove = (e: React.PointerEvent) => {
     const d = drag.current;
     if (!d) return;
+    const dx = e.clientX - d.x0;
     const dy = e.clientY - d.y0;
-    if (Math.abs(dy) > 6) d.moved = true;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) d.moved = true;
     if (!d.moved) return;
     if (d.mode === "resize") update(d.id, (t) => ({ ...t, minutes: snap(d.v0 + dy / PX_PER_MIN) }));
-    else update(d.id, (t) => ({ ...t, start: snapStart(d.v0 + dy / PX_PER_MIN) }));
+    else {
+      update(d.id, (t) => ({ ...t, start: snapStart(d.v0 + dy / PX_PER_MIN) }));
+      setDragDx(dx);
+    }
   };
   const onUp = () => {
     const d = drag.current;
     drag.current = null;
+    setDragDx(0);
     if (d?.moved) setTasks((ts) => resolveOverlaps(ts));
-    if (d && !d.moved && d.mode === "move") setOpenId(d.id);
+    if (d && d.mode === "move" && Math.abs(dragDx) > 80) moveToDay(d.id, dragDx > 0 ? 1 : -1);
+    else if (d && !d.moved && d.mode === "move") setOpenId(d.id);
   };
 
   const addTask = () => {
