@@ -66,20 +66,24 @@ function Circle({ done, late, size = 16 }: { done: boolean; late?: boolean; size
 
 function App() {
   const [date, setDate] = useState(() => new Date());
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  // tasks are kept together with the day they belong to, so a day switch
+  // can never save one day's list over another day's
+  const [day, setDay] = useState<{ key: string; tasks: Task[] }>(() => ({ key: dayKey(new Date()), tasks: [] }));
+  const tasks = day.tasks;
+  const loaded = day.key === dayKey(date);
+  const setTasks = (f: Task[] | ((ts: Task[]) => Task[])) =>
+    setDay((d) => ({ ...d, tasks: typeof f === "function" ? f(d.tasks) : f }));
   const [openId, setOpenId] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    setLoaded(false);
-    const raw = localStorage.getItem(dayKey(date));
-    setTasks(raw ? migrate(JSON.parse(raw)) : []);
-    setLoaded(true);
+    const k = dayKey(date);
+    const raw = localStorage.getItem(k);
+    setDay({ key: k, tasks: raw ? migrate(JSON.parse(raw)) : [] });
   }, [date]);
   useEffect(() => {
-    if (loaded) localStorage.setItem(dayKey(date), JSON.stringify(tasks));
-  }, [tasks, loaded, date]);
+    if (day.key === dayKey(date)) localStorage.setItem(day.key, JSON.stringify(day.tasks));
+  }, [day, date]);
   // keep the now-marker on the actual clock: tick every second and resync
   // whenever the app becomes visible again (timers pause in background)
   useEffect(() => {
@@ -114,28 +118,50 @@ function App() {
   const update = (id: string, f: (t: Task) => Task) => setTasks((ts) => ts.map((t) => (t.id === id ? f(t) : t)));
 
   // drag state
-  const drag = useRef<{ id: string; mode: "move" | "resize"; y0: number; v0: number; moved: boolean } | null>(null);
+  const drag = useRef<{ id: string; mode: "move" | "resize"; x0: number; y0: number; v0: number; moved: boolean } | null>(null);
+  const [dragDx, setDragDx] = useState(0);
+
+  // drag a card sideways to move it to the next or previous day
+  const moveToDay = (id: string, dir: number) => {
+    const t = tasks.find((x) => x.id === id);
+    if (!t) return;
+    const target = new Date(date.getTime() + dir * 864e5);
+    const raw = localStorage.getItem(dayKey(target));
+    const other: Task[] = raw ? migrate(JSON.parse(raw)) : [];
+    localStorage.setItem(dayKey(target), JSON.stringify(resolveOverlaps([...other, t])));
+    // save the removal on the current day right away: the day switch below
+    // means the normal save would otherwise never write it
+    localStorage.setItem(dayKey(date), JSON.stringify(tasks.filter((x) => x.id !== id)));
+    setTasks((ts) => ts.filter((x) => x.id !== id));
+    setDate(target);
+  };
 
   const onDown = (e: React.PointerEvent, id: string, mode: "move" | "resize") => {
     e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     const t = tasks.find((x) => x.id === id)!;
-    drag.current = { id, mode, y0: e.clientY, v0: mode === "move" ? t.start : t.minutes, moved: false };
+    drag.current = { id, mode, x0: e.clientX, y0: e.clientY, v0: mode === "move" ? t.start : t.minutes, moved: false };
   };
   const onMove = (e: React.PointerEvent) => {
     const d = drag.current;
     if (!d) return;
+    const dx = e.clientX - d.x0;
     const dy = e.clientY - d.y0;
-    if (Math.abs(dy) > 6) d.moved = true;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) d.moved = true;
     if (!d.moved) return;
     if (d.mode === "resize") update(d.id, (t) => ({ ...t, minutes: snap(d.v0 + dy / PX_PER_MIN) }));
-    else update(d.id, (t) => ({ ...t, start: snapStart(d.v0 + dy / PX_PER_MIN) }));
+    else {
+      update(d.id, (t) => ({ ...t, start: snapStart(d.v0 + dy / PX_PER_MIN) }));
+      setDragDx(dx);
+    }
   };
   const onUp = () => {
     const d = drag.current;
     drag.current = null;
+    setDragDx(0);
     if (d?.moved) setTasks((ts) => resolveOverlaps(ts));
-    if (d && !d.moved && d.mode === "move") setOpenId(d.id);
+    if (d && d.mode === "move" && Math.abs(dragDx) > 80) moveToDay(d.id, dragDx > 0 ? 1 : -1);
+    else if (d && !d.moved && d.mode === "move") setOpenId(d.id);
   };
 
   const addTask = () => {
@@ -194,7 +220,7 @@ function App() {
                   key={t.id}
                   onPointerDown={(e) => onDown(e, t.id, "move")}
                   className={`absolute left-14 right-3 touch-none overflow-hidden rounded-2xl px-3 pt-2 shadow-sm ${dy ? "z-20 shadow-lg" : "transition-[top]"} ${complete ? "bg-frog-light" : isLate ? "border-2 border-late bg-late-bg" : "bg-card"}`}
-                  style={{ top: top + GAP / 2, height: h - GAP }}
+                  style={{ top: top + GAP / 2, height: h - GAP, transform: dy && dragDx ? `translateX(${dragDx}px)` : undefined }}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-[20px] font-semibold">{t.name}</span>
