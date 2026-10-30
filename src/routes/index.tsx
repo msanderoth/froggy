@@ -66,20 +66,24 @@ function Circle({ done, late, size = 16 }: { done: boolean; late?: boolean; size
 
 function App() {
   const [date, setDate] = useState(() => new Date());
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  // tasks are kept together with the day they belong to, so a day switch
+  // can never save one day's list over another day's
+  const [day, setDay] = useState<{ key: string; tasks: Task[] }>(() => ({ key: dayKey(new Date()), tasks: [] }));
+  const tasks = day.tasks;
+  const loaded = day.key === dayKey(date);
+  const setTasks = (f: Task[] | ((ts: Task[]) => Task[])) =>
+    setDay((d) => ({ ...d, tasks: typeof f === "function" ? f(d.tasks) : f }));
   const [openId, setOpenId] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    setLoaded(false);
-    const raw = localStorage.getItem(dayKey(date));
-    setTasks(raw ? migrate(JSON.parse(raw)) : []);
-    setLoaded(true);
+    const k = dayKey(date);
+    const raw = localStorage.getItem(k);
+    setDay({ key: k, tasks: raw ? migrate(JSON.parse(raw)) : [] });
   }, [date]);
   useEffect(() => {
-    if (loaded) localStorage.setItem(dayKey(date), JSON.stringify(tasks));
-  }, [tasks, loaded, date]);
+    if (day.key === dayKey(date)) localStorage.setItem(day.key, JSON.stringify(day.tasks));
+  }, [day, date]);
   // keep the now-marker on the actual clock: tick every second and resync
   // whenever the app becomes visible again (timers pause in background)
   useEffect(() => {
