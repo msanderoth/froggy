@@ -369,8 +369,9 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
     setEditId(null);
   };
   const complete = task.subs.length > 0 && done === task.subs.length;
-  // drag a sub-task by its grip to change the order; open items stay above checked ones
-  const subDrag = useRef<{ id: string; startY: number; stride: number } | null>(null);
+  // drag a sub-task row anywhere between the checkbox and the delete button to reorder;
+  // open items stay above checked ones
+  const subDrag = useRef<{ id: string; startY: number; startX: number; stride: number; active: boolean } | null>(null);
   const [dragSubId, setDragSubId] = useState<string | null>(null);
   const [dragDy, setDragDy] = useState(0);
   const onSubDown = (e: React.PointerEvent, id: string) => {
@@ -378,12 +379,15 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const row = (e.currentTarget as HTMLElement).closest("[data-sub-row]") as HTMLElement | null;
     if (!row) return;
-    subDrag.current = { id, startY: e.clientY, stride: row.offsetHeight + 8 };
-    setDragSubId(id);
+    subDrag.current = { id, startY: e.clientY, startX: e.clientX, stride: row.offsetHeight + 8, active: false };
   };
   const onSubMove = (e: React.PointerEvent) => {
     const d = subDrag.current;
     if (!d) return;
+    // a plain tap never enters drag mode: the pointer must move first
+    if (!d.active && Math.abs(e.clientY - d.startY) < 6 && Math.abs(e.clientX - d.startX) < 6) return;
+    d.active = true;
+    setDragSubId(d.id);
     const from = task.subs.findIndex((s) => s.id === d.id);
     if (from < 0) return;
     const unchecked = task.subs.filter((s) => !s.done).length;
@@ -402,11 +406,6 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
     setDragSubId(null);
     setDragDy(0);
   };
-  const grip = (
-    <svg width="10" height="16" viewBox="0 0 10 16" className="shrink-0" fill="currentColor" aria-hidden>
-      {[2, 8].map((cx) => [3, 8, 13].map((cy) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.6" />))}
-    </svg>
-  );
   return (
     <div className={`absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-t-[2.5rem] px-4 pt-6 pb-24 animate-in slide-in-from-bottom-4 fade-in ${complete ? "bg-frog-light" : late ? "bg-late-bg" : "bg-card"}`}>
       <div className="relative mb-5 flex items-center justify-center">
@@ -446,21 +445,6 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
                 className={`flex items-center gap-3 text-[20px] leading-none ${s.done ? "text-frog" : ""} ${dragging ? "relative z-10 rounded-md bg-card/80 shadow-md" : ""}`}
                 style={dragging ? { transform: `translateY(${dragDy}px)` } : undefined}
               >
-                {canDrag ? (
-                  <button
-                    type="button"
-                    aria-label="Ändra ordning"
-                    onPointerDown={(e) => onSubDown(e, s.id)}
-                    onPointerMove={onSubMove}
-                    onPointerUp={onSubUp}
-                    onPointerCancel={onSubUp}
-                    className="shrink-0 cursor-grab touch-none text-muted-foreground/50"
-                  >
-                    {grip}
-                  </button>
-                ) : (
-                  <span className="shrink-0 opacity-0">{grip}</span>
-                )}
                 <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} late={late} size={24} /></button>
               {s.id === editId ? (
                 <input autoFocus value={s.name} placeholder="Sub-task"
@@ -469,7 +453,15 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
                   onBlur={commit}
                   className={`flex-1 rounded-md border-2 bg-transparent px-1 outline-none ${complete ? "border-frog" : late ? "border-late" : "border-primary"}`} />
               ) : (
-                <span className="flex-1 truncate">{s.name}</span>
+                <span
+                  onPointerDown={(e) => onSubDown(e, s.id)}
+                  onPointerMove={onSubMove}
+                  onPointerUp={onSubUp}
+                  onPointerCancel={onSubUp}
+                  className={`flex-1 touch-none ${canDrag ? "cursor-grab" : ""}`}
+                >
+                  {s.name}
+                </span>
               )}
               <button aria-label="Ta bort" onClick={() => onChange((t) => ({ ...t, subs: t.subs.filter((x) => x.id !== s.id) }))} className="shrink-0"><img src={exit2Svg} alt="" className="h-5 w-5" draggable={false} /></button>
               </div>
