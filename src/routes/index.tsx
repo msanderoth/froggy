@@ -22,6 +22,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "En att-göra-lista där varje uppgift tar plats efter hur lång tid den tar." },
       { property: "og:title", content: "Grodlistan – planera dagen i tid" },
       { property: "og:description", content: "Se hur lång tid dina uppgifter tar och hinn med dagen." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: App,
@@ -73,6 +75,7 @@ const migrate = (ts: Task[]) => { let c = DAY_START; return ts.map((t) => { cons
 // sub-tasks can be reordered by dragging, but only within their own group:
 // open items stay above the checked ones (checked always sink to the bottom)
 export const moveSub = (subs: Sub[], from: number, to: number): Sub[] => {
+  if (!subs[from]) return subs;
   const unchecked = subs.filter((s) => !s.done).length;
   const lo = subs[from]?.done ? unchecked : 0;
   const hi = subs[from]?.done ? subs.length - 1 : unchecked - 1;
@@ -80,8 +83,39 @@ export const moveSub = (subs: Sub[], from: number, to: number): Sub[] => {
   if (target === from) return subs;
   const arr = [...subs];
   const [moved] = arr.splice(from, 1);
-  arr.splice(target, 0, moved!);
+  if (!moved) return subs;
+  arr.splice(target, 0, moved);
   return arr;
+};
+
+type SubRowBounds = { id: string; top: number; height: number; done: boolean };
+export const subDragPreview = (rows: SubRowBounds[], id: string, delta: number) => {
+  const from = rows.findIndex((row) => row.id === id);
+  const row = rows[from];
+  if (!row) return { target: from, offsets: {} as Record<string, number> };
+  const group = rows.filter((item) => item.done === row.done);
+  const first = group[0];
+  const last = group[group.length - 1];
+  if (!first || !last) return { target: from, offsets: {} as Record<string, number> };
+  const dy = Math.max(first.top - row.top, Math.min(last.top + last.height - row.height - row.top, delta));
+  const center = row.top + dy + row.height / 2;
+  let target = from;
+  for (const item of group) {
+    const index = rows.indexOf(item);
+    if (index > from && center > item.top + item.height / 2) target = index;
+    if (index < from && center < item.top + item.height / 2) { target = index; break; }
+  }
+  const order = [...rows];
+  order.splice(from, 1);
+  order.splice(target, 0, row);
+  const gap = rows.length > 1 ? rows[1].top - rows[0].top - rows[0].height : 0;
+  const offsets: Record<string, number> = {};
+  let top = rows[0]?.top ?? 0;
+  for (const item of order) {
+    offsets[item.id] = item.id === id ? dy : top - item.top;
+    top += item.height + gap;
+  }
+  return { target, offsets };
 };
 
 function Circle({ done, late, size = 16 }: { done: boolean; late?: boolean; size?: number }) {
@@ -371,15 +405,22 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
   const complete = task.subs.length > 0 && done === task.subs.length;
   // drag a sub-task row anywhere between the checkbox and the delete button to reorder;
   // open items stay above checked ones
-  const subDrag = useRef<{ id: string; startY: number; startX: number; stride: number; active: boolean } | null>(null);
+  const subList = useRef<HTMLDivElement>(null);
+  const subDrag = useRef<{ id: string; startY: number; startX: number; rows: SubRowBounds[]; target: number; active: boolean } | null>(null);
   const [dragSubId, setDragSubId] = useState<string | null>(null);
-  const [dragDy, setDragDy] = useState(0);
+  const [subOffsets, setSubOffsets] = useState<Record<string, number>>({});
   const onSubDown = (e: React.PointerEvent, id: string) => {
     e.stopPropagation();
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    const row = (e.currentTarget as HTMLElement).closest("[data-sub-row]") as HTMLElement | null;
-    if (!row) return;
-    subDrag.current = { id, startY: e.clientY, startX: e.clientX, stride: row.offsetHeight + 8, active: false };
+    const list = subList.current;
+    if (!list) return;
+    const listTop = list.getBoundingClientRect().top;
+    const rows = Array.from(list.querySelectorAll<HTMLElement>("[data-sub-row]")).map((element) => {
+      const bounds = element.getBoundingClientRect();
+      const rowId = element.dataset.subRow ?? "";
+      return { id: rowId, top: bounds.top - listTop, height: bounds.height, done: task.subs.find((s) => s.id === rowId)?.done ?? false };
+    });
+    e.currentTarget.setPointerCapture(e.pointerId);
+    subDrag.current = { id, startY: e.clientY, startX: e.clientX, rows, target: rows.findIndex((row) => row.id === id), active: false };
   };
   const onSubMove = (e: React.PointerEvent) => {
     const d = subDrag.current;
@@ -388,23 +429,27 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
     if (!d.active && Math.abs(e.clientY - d.startY) < 6 && Math.abs(e.clientX - d.startX) < 6) return;
     d.active = true;
     setDragSubId(d.id);
-    const from = task.subs.findIndex((s) => s.id === d.id);
-    if (from < 0) return;
-    const unchecked = task.subs.filter((s) => !s.done).length;
-    const lo = task.subs[from]!.done ? unchecked : 0;
-    const hi = task.subs[from]!.done ? task.subs.length - 1 : unchecked - 1;
-    if (hi <= lo) { setDragDy(0); return; }
-    const to = Math.min(hi, Math.max(lo, from + Math.round((e.clientY - d.startY) / d.stride)));
-    if (to !== from) {
-      onChange((t) => ({ ...t, subs: moveSub(t.subs, from, to) }));
-      d.startY = e.clientY - (to - from) * d.stride;
-    }
-    setDragDy(e.clientY - d.startY);
+    const preview = subDragPreview(d.rows, d.id, e.clientY - d.startY);
+    d.target = preview.target;
+    setSubOffsets(preview.offsets);
   };
-  const onSubUp = () => {
+  const onSubUp = (cancel = false) => {
+    const d = subDrag.current;
+    const list = subList.current;
+    const before = new Map(Array.from(list?.querySelectorAll<HTMLElement>("[data-sub-row]") ?? []).map((row) => [row.dataset.subRow, row.getBoundingClientRect().top]));
+    if (d?.active && !cancel) onChange((t) => ({ ...t, subs: moveSub(t.subs, t.subs.findIndex((s) => s.id === d.id), d.target) }));
     subDrag.current = null;
     setDragSubId(null);
-    setDragDy(0);
+    setSubOffsets({});
+    requestAnimationFrame(() => {
+      if (!list || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      list.querySelectorAll<HTMLElement>("[data-sub-row]").forEach((row) => {
+        const previous = before.get(row.dataset.subRow);
+        if (previous === undefined) return;
+        const offset = previous - row.getBoundingClientRect().top;
+        if (offset) row.animate([{ transform: `translateY(${offset}px)` }, { transform: "translateY(0)" }], { duration: 160, easing: "ease-out" });
+      });
+    });
   };
   return (
     <div className={`absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-t-[2.5rem] px-4 pt-6 pb-24 animate-in slide-in-from-bottom-4 fade-in ${complete ? "bg-frog-light" : late ? "bg-late-bg" : "bg-card"}`}>
@@ -433,7 +478,7 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
       </div>
       <div className={`rounded-2xl border-2 p-3 ${complete ? "border-frog" : late ? "border-late" : "border-primary"}`}>
         <div className="mb-2 text-center text-[24px]">Att göra</div>
-        <div className="space-y-2">
+        <div ref={subList} className="space-y-2 overflow-hidden">
           {task.subs.map((s) => {
             const unchecked = task.subs.filter((x) => !x.done).length;
             const canDrag = s.done ? task.subs.length - unchecked > 1 : unchecked > 1;
@@ -441,9 +486,9 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
             return (
               <div
                 key={s.id}
-                data-sub-row
-                className={`flex items-center gap-3 text-[20px] leading-none ${s.done ? "text-frog" : ""} ${dragging ? "relative z-10 rounded-md bg-card/80 shadow-md" : ""}`}
-                style={dragging ? { transform: `translateY(${dragDy}px)` } : undefined}
+                data-sub-row={s.id}
+                className={`relative flex items-center gap-3 text-[20px] leading-none ${s.done ? "text-frog" : ""} ${dragging ? "z-10 rounded-md bg-card/80" : dragSubId ? "transition-transform duration-150 ease-out motion-reduce:transition-none" : ""}`}
+                style={{ transform: `translateY(${subOffsets[s.id] ?? 0}px)` }}
               >
                 <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} late={late} size={24} /></button>
               {s.id === editId ? (
@@ -456,9 +501,10 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
                 <span
                   onPointerDown={(e) => onSubDown(e, s.id)}
                   onPointerMove={onSubMove}
-                  onPointerUp={onSubUp}
-                  onPointerCancel={onSubUp}
-                  className={`flex-1 touch-none ${canDrag ? "cursor-grab" : ""}`}
+                  onPointerUp={() => onSubUp()}
+                  onPointerCancel={() => onSubUp(true)}
+                  onLostPointerCapture={() => { if (subDrag.current) onSubUp(true); }}
+                  className={`flex-1 min-w-0 self-stretch flex items-center break-words select-none touch-none ${canDrag ? dragging ? "cursor-grabbing" : "cursor-grab" : ""}`}
                 >
                   {s.name}
                 </span>

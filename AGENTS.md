@@ -9,3 +9,4 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 - Static GitHub Pages build: vite.config.ts reads BASE_PATH for base/router basepath and prerenders "/"; .github/workflows/deploy.yml publishes .output/public. Why: GitHub Pages only serves static files under /repo-name/.
+- Sub-task dragging uses measured row bounds and a transform-only preview, committing order on release; this prevents layout changes from moving the pointer anchor during a drag.
