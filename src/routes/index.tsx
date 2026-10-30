@@ -402,11 +402,6 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
     setDragSubId(null);
     setDragDy(0);
   };
-  const grip = (
-    <svg width="10" height="16" viewBox="0 0 10 16" className="shrink-0" fill="currentColor" aria-hidden>
-      {[2, 8].map((cx) => [3, 8, 13].map((cy) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.6" />))}
-    </svg>
-  );
   return (
     <div className={`absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-t-[2.5rem] px-4 pt-6 pb-24 animate-in slide-in-from-bottom-4 fade-in ${complete ? "bg-frog-light" : late ? "bg-late-bg" : "bg-card"}`}>
       <div className="relative mb-5 flex items-center justify-center">
@@ -446,21 +441,6 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
                 className={`flex items-center gap-3 text-[20px] leading-none ${s.done ? "text-frog" : ""} ${dragging ? "relative z-10 rounded-md bg-card/80 shadow-md" : ""}`}
                 style={dragging ? { transform: `translateY(${dragDy}px)` } : undefined}
               >
-                {canDrag ? (
-                  <button
-                    type="button"
-                    aria-label="Ändra ordning"
-                    onPointerDown={(e) => onSubDown(e, s.id)}
-                    onPointerMove={onSubMove}
-                    onPointerUp={onSubUp}
-                    onPointerCancel={onSubUp}
-                    className="shrink-0 cursor-grab touch-none text-muted-foreground/50"
-                  >
-                    {grip}
-                  </button>
-                ) : (
-                  <span className="shrink-0 opacity-0">{grip}</span>
-                )}
                 <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} late={late} size={24} /></button>
               {s.id === editId ? (
                 <input autoFocus value={s.name} placeholder="Sub-task"
