@@ -27,7 +27,7 @@ export const Route = createFileRoute("/")({
   component: App,
 });
 
-type Sub = { id: string; name: string; done: boolean };
+export type Sub = { id: string; name: string; done: boolean };
 export type Task = { id: string; name: string; minutes: number; start: number; subs: Sub[] };
 
 const PX_PER_MIN = 2.9;
@@ -70,6 +70,19 @@ export const placeAround = (anchor: Task, others: Task[]) => {
 };
 // older saved lists had no start time: place them back to back
 const migrate = (ts: Task[]) => { let c = DAY_START; return ts.map((t) => { const st = typeof t.start === "number" ? t.start : c; c = st + t.minutes; return { ...t, start: st }; }); };
+// sub-tasks can be reordered by dragging, but only within their own group:
+// open items stay above the checked ones (checked always sink to the bottom)
+export const moveSub = (subs: Sub[], from: number, to: number): Sub[] => {
+  const unchecked = subs.filter((s) => !s.done).length;
+  const lo = subs[from]?.done ? unchecked : 0;
+  const hi = subs[from]?.done ? subs.length - 1 : unchecked - 1;
+  const target = Math.min(hi, Math.max(lo, to));
+  if (target === from) return subs;
+  const arr = [...subs];
+  const [moved] = arr.splice(from, 1);
+  arr.splice(target, 0, moved!);
+  return arr;
+};
 
 function Circle({ done, late, size = 16 }: { done: boolean; late?: boolean; size?: number }) {
   return <img src={done ? checkChecked : late ? checkStressed : checkDefault} alt="" width={size} height={size} className="shrink-0" draggable={false} />;
@@ -356,6 +369,44 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
     setEditId(null);
   };
   const complete = task.subs.length > 0 && done === task.subs.length;
+  // drag a sub-task by its grip to change the order; open items stay above checked ones
+  const subDrag = useRef<{ id: string; startY: number; stride: number } | null>(null);
+  const [dragSubId, setDragSubId] = useState<string | null>(null);
+  const [dragDy, setDragDy] = useState(0);
+  const onSubDown = (e: React.PointerEvent, id: string) => {
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    const row = (e.currentTarget as HTMLElement).closest("[data-sub-row]") as HTMLElement | null;
+    if (!row) return;
+    subDrag.current = { id, startY: e.clientY, stride: row.offsetHeight + 8 };
+    setDragSubId(id);
+  };
+  const onSubMove = (e: React.PointerEvent) => {
+    const d = subDrag.current;
+    if (!d) return;
+    const from = task.subs.findIndex((s) => s.id === d.id);
+    if (from < 0) return;
+    const unchecked = task.subs.filter((s) => !s.done).length;
+    const lo = task.subs[from]!.done ? unchecked : 0;
+    const hi = task.subs[from]!.done ? task.subs.length - 1 : unchecked - 1;
+    if (hi <= lo) { setDragDy(0); return; }
+    const to = Math.min(hi, Math.max(lo, from + Math.round((e.clientY - d.startY) / d.stride)));
+    if (to !== from) {
+      onChange((t) => ({ ...t, subs: moveSub(t.subs, from, to) }));
+      d.startY = e.clientY - (to - from) * d.stride;
+    }
+    setDragDy(e.clientY - d.startY);
+  };
+  const onSubUp = () => {
+    subDrag.current = null;
+    setDragSubId(null);
+    setDragDy(0);
+  };
+  const grip = (
+    <svg width="10" height="16" viewBox="0 0 10 16" className="shrink-0" fill="currentColor" aria-hidden>
+      {[2, 8].map((cx) => [3, 8, 13].map((cy) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.6" />))}
+    </svg>
+  );
   return (
     <div className={`absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-t-[2.5rem] px-4 pt-6 pb-24 animate-in slide-in-from-bottom-4 fade-in ${complete ? "bg-frog-light" : late ? "bg-late-bg" : "bg-card"}`}>
       <div className="relative mb-5 flex items-center justify-center">
@@ -384,9 +435,33 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
       <div className={`rounded-2xl border-2 p-3 ${complete ? "border-frog" : late ? "border-late" : "border-primary"}`}>
         <div className="mb-2 text-center text-[24px]">Att göra</div>
         <div className="space-y-2">
-          {task.subs.map((s) => (
-            <div key={s.id} className={`flex items-center gap-3 text-[20px] leading-none ${s.done ? "text-frog" : ""}`}>
-              <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} late={late} size={24} /></button>
+          {task.subs.map((s) => {
+            const unchecked = task.subs.filter((x) => !x.done).length;
+            const canDrag = s.done ? task.subs.length - unchecked > 1 : unchecked > 1;
+            const dragging = s.id === dragSubId;
+            return (
+              <div
+                key={s.id}
+                data-sub-row
+                className={`flex items-center gap-3 text-[20px] leading-none ${s.done ? "text-frog" : ""} ${dragging ? "relative z-10 rounded-md bg-card/80 shadow-md" : ""}`}
+                style={dragging ? { transform: `translateY(${dragDy}px)` } : undefined}
+              >
+                {canDrag ? (
+                  <button
+                    type="button"
+                    aria-label="Ändra ordning"
+                    onPointerDown={(e) => onSubDown(e, s.id)}
+                    onPointerMove={onSubMove}
+                    onPointerUp={onSubUp}
+                    onPointerCancel={onSubUp}
+                    className="shrink-0 cursor-grab touch-none text-muted-foreground/50"
+                  >
+                    {grip}
+                  </button>
+                ) : (
+                  <span className="shrink-0 opacity-0">{grip}</span>
+                )}
+                <button aria-label="Bocka av" onClick={() => toggle(s.id)}><Circle done={s.done} late={late} size={24} /></button>
               {s.id === editId ? (
                 <input autoFocus value={s.name} placeholder="Sub-task"
                   onChange={(e) => onChange((t) => ({ ...t, subs: t.subs.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x)) }))}
@@ -397,8 +472,9 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
                 <span className="flex-1 truncate">{s.name}</span>
               )}
               <button aria-label="Ta bort" onClick={() => onChange((t) => ({ ...t, subs: t.subs.filter((x) => x.id !== s.id) }))} className="shrink-0"><img src={exit2Svg} alt="" className="h-5 w-5" draggable={false} /></button>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
         <button onClick={addNew} className={`mx-auto mt-3 flex items-center gap-2 text-[24px] ${complete ? "text-frog" : late ? "text-late" : "text-primary"}`}>
           <img src={complete ? smallAddGreen : late ? smallAddPink : smallAdd} alt="" className="h-7 w-7" draggable={false} /> Lägg till
