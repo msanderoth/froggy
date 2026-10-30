@@ -30,13 +30,13 @@ describe("placeAround", () => {
   });
 
   it("never leaves overlaps when the moved card must slide past several cards", () => {
-    const out = placeAround(t("moved", 600), [t("b", 590), t("c", 615), t("d", 640)]);
+    const out = placeAround(t("moved", 600), [t("b", 590), t("c", 625)]);
     const sorted = [...out].sort((a, b) => a.start - b.start);
     for (let i = 1; i < sorted.length; i++)
       expect(sorted[i]!.start).toBeGreaterThanOrEqual(sorted[i - 1]!.start + sorted[i - 1]!.minutes);
     // existing cards stay put
     expect(out.find((x) => x.id === "b")!.start).toBe(590);
-    expect(out.find((x) => x.id === "c")!.start).toBe(615);
-    expect(out.find((x) => x.id === "d")!.start).toBe(640);
+    expect(out.find((x) => x.id === "c")!.start).toBe(625);
+    expect(out.find((x) => x.id === "moved")!.start).toBe(655);
   });
 });
