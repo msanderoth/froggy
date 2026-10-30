@@ -5,8 +5,9 @@ const t = (id: string, start: number, minutes = 30): Task => ({ id, name: id, mi
 
 describe("placeAround", () => {
   it("keeps the moved task at its exact old time", () => {
-    const [moved] = placeAround(t("a", 600), []);
-    expect(moved.start).toBe(600);
+    const out = placeAround(t("a", 600), []);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.start).toBe(600);
   });
 
   it("keeps the moved task's time when an old card sits exactly there, sliding the old card below", () => {
