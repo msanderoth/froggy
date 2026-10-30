@@ -369,7 +369,8 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
     setEditId(null);
   };
   const complete = task.subs.length > 0 && done === task.subs.length;
-  // drag a sub-task by its grip to change the order; open items stay above checked ones
+  // drag a sub-task row anywhere between the checkbox and the delete button to reorder;
+  // open items stay above checked ones
   const subDrag = useRef<{ id: string; startY: number; startX: number; stride: number; active: boolean } | null>(null);
   const [dragSubId, setDragSubId] = useState<string | null>(null);
   const [dragDy, setDragDy] = useState(0);
