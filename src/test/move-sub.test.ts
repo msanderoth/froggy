@@ -33,14 +33,14 @@ describe("subDragPreview", () => {
     { id: "d", top: 120, height: 24, done: true },
   ];
   it("keeps the dragged row inside its group at both list edges", () => {
-    expect(subDragPreview(rows, "a", 1000).offsets.a).toBe(88);
-    expect(subDragPreview(rows, "c", -1000).offsets.c).toBe(-88);
-    expect(subDragPreview(rows, "b", 1000).offsets.b).toBe(32);
-    expect(subDragPreview(rows, "d", -1000).offsets.d).toBe(0);
+    expect(subDragPreview(rows, "a", 1000).offsets["a"]).toBe(88);
+    expect(subDragPreview(rows, "c", -1000).offsets["c"]).toBe(-88);
+    expect(subDragPreview(rows, "b", 1000).offsets["b"]).toBe(32);
+    expect(subDragPreview(rows, "d", -1000).offsets["d"]).toBe(0);
   });
   it("follows the pointer continuously through a reorder threshold without changing the original rows", () => {
-    expect(subDragPreview(rows, "a", 43).offsets.a).toBe(43);
-    expect(subDragPreview(rows, "a", 45).offsets.a).toBe(45);
+    expect(subDragPreview(rows, "a", 43).offsets["a"]).toBe(43);
+    expect(subDragPreview(rows, "a", 45).offsets["a"]).toBe(45);
     expect(subDragPreview(rows, "a", 45).target).toBe(1);
     expect(rows.map((row) => row.id)).toEqual(["a", "b", "c", "d"]);
   });

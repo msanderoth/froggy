@@ -108,7 +108,9 @@ export const subDragPreview = (rows: SubRowBounds[], id: string, delta: number) 
   const order = [...rows];
   order.splice(from, 1);
   order.splice(target, 0, row);
-  const gap = rows.length > 1 ? rows[1].top - rows[0].top - rows[0].height : 0;
+  const firstRow = rows[0];
+  const secondRow = rows[1];
+  const gap = firstRow && secondRow ? secondRow.top - firstRow.top - firstRow.height : 0;
   const offsets: Record<string, number> = {};
   let top = rows[0]?.top ?? 0;
   for (const item of order) {
@@ -416,7 +418,7 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
     const listTop = list.getBoundingClientRect().top;
     const rows = Array.from(list.querySelectorAll<HTMLElement>("[data-sub-row]")).map((element) => {
       const bounds = element.getBoundingClientRect();
-      const rowId = element.dataset.subRow ?? "";
+      const rowId = element.dataset["subRow"] ?? "";
       return { id: rowId, top: bounds.top - listTop, height: bounds.height, done: task.subs.find((s) => s.id === rowId)?.done ?? false };
     });
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -436,7 +438,7 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
   const onSubUp = (cancel = false) => {
     const d = subDrag.current;
     const list = subList.current;
-    const before = new Map(Array.from(list?.querySelectorAll<HTMLElement>("[data-sub-row]") ?? []).map((row) => [row.dataset.subRow, row.getBoundingClientRect().top]));
+    const before = new Map(Array.from(list?.querySelectorAll<HTMLElement>("[data-sub-row]") ?? []).map((row) => [row.dataset["subRow"], row.getBoundingClientRect().top]));
     if (d?.active && !cancel) onChange((t) => ({ ...t, subs: moveSub(t.subs, t.subs.findIndex((s) => s.id === d.id), d.target) }));
     subDrag.current = null;
     setDragSubId(null);
@@ -444,7 +446,7 @@ function Detail({ task, late, onChange, onClose, onDelete }: { task: Task; late:
     requestAnimationFrame(() => {
       if (!list || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       list.querySelectorAll<HTMLElement>("[data-sub-row]").forEach((row) => {
-        const previous = before.get(row.dataset.subRow);
+        const previous = before.get(row.dataset["subRow"]);
         if (previous === undefined) return;
         const offset = previous - row.getBoundingClientRect().top;
         if (offset) row.animate([{ transform: `translateY(${offset}px)` }, { transform: "translateY(0)" }], { duration: 160, easing: "ease-out" });
