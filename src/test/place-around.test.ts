@@ -10,28 +10,33 @@ describe("placeAround", () => {
     expect(out[0]!.start).toBe(600);
   });
 
-  it("keeps the moved task's time when an old card sits exactly there, sliding the old card below", () => {
+  it("keeps existing cards where they are and slides the moved card below when the slot is taken", () => {
     const out = placeAround(t("moved", 600), [t("b", 600)]);
-    expect(out.find((x) => x.id === "moved")!.start).toBe(600);
-    expect(out.find((x) => x.id === "b")!.start).toBe(630);
+    expect(out.find((x) => x.id === "b")!.start).toBe(600);
+    expect(out.find((x) => x.id === "moved")!.start).toBe(630);
   });
 
-  it("slides an old card below even when it starts before the moved card but overlaps it", () => {
+  it("slides the moved card below an existing card that starts earlier but overlaps it", () => {
     const out = placeAround(t("moved", 600), [t("b", 585)]);
-    expect(out.find((x) => x.id === "moved")!.start).toBe(600);
-    expect(out.find((x) => x.id === "b")!.start).toBe(630);
+    expect(out.find((x) => x.id === "b")!.start).toBe(585);
+    expect(out.find((x) => x.id === "moved")!.start).toBe(615);
   });
 
-  it("leaves non-colliding cards untouched", () => {
+  it("leaves non-colliding cards untouched and keeps the moved time", () => {
     const out = placeAround(t("moved", 600), [t("b", 660), t("c", 480)]);
     expect(out.find((x) => x.id === "b")!.start).toBe(660);
     expect(out.find((x) => x.id === "c")!.start).toBe(480);
+    expect(out.find((x) => x.id === "moved")!.start).toBe(600);
   });
 
-  it("never leaves overlaps when several old cards collide", () => {
-    const out = placeAround(t("moved", 600), [t("b", 590), t("c", 615)]);
+  it("never leaves overlaps when the moved card must slide past several cards", () => {
+    const out = placeAround(t("moved", 600), [t("b", 590), t("c", 625)]);
     const sorted = [...out].sort((a, b) => a.start - b.start);
     for (let i = 1; i < sorted.length; i++)
       expect(sorted[i]!.start).toBeGreaterThanOrEqual(sorted[i - 1]!.start + sorted[i - 1]!.minutes);
+    // existing cards stay put
+    expect(out.find((x) => x.id === "b")!.start).toBe(590);
+    expect(out.find((x) => x.id === "c")!.start).toBe(625);
+    expect(out.find((x) => x.id === "moved")!.start).toBe(655);
   });
 });
