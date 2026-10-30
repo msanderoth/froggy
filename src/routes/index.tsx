@@ -120,6 +120,13 @@ function App() {
   // drag state
   const drag = useRef<{ id: string; mode: "move" | "resize"; x0: number; y0: number; v0: number; moved: boolean } | null>(null);
   const [dragDx, setDragDx] = useState(0);
+  // timer for "hold the pointer at the screen edge to switch day"
+  const edgeTimer = useRef<{ dir: number; t: ReturnType<typeof setTimeout> } | null>(null);
+  const clearEdge = () => {
+    if (edgeTimer.current) clearTimeout(edgeTimer.current.t);
+    edgeTimer.current = null;
+  };
+  useEffect(() => clearEdge, []);
 
   // drag a card sideways to move it to the next or previous day
   const moveToDay = (id: string, dir: number) => {
@@ -153,15 +160,30 @@ function App() {
     else {
       update(d.id, (t) => ({ ...t, start: snapStart(d.v0 + dy / PX_PER_MIN) }));
       setDragDx(dx);
+      // hold the pointer at the screen edge for 500 ms to move the card to the next/previous day
+      const dir = e.clientX > window.innerWidth - 40 ? 1 : e.clientX < 40 ? -1 : 0;
+      if (dir && edgeTimer.current?.dir !== dir) {
+        clearEdge();
+        const id = d.id;
+        edgeTimer.current = {
+          dir,
+          t: setTimeout(() => {
+            edgeTimer.current = null;
+            drag.current = null;
+            setDragDx(0);
+            moveToDay(id, dir);
+          }, 500),
+        };
+      } else if (!dir) clearEdge();
     }
   };
   const onUp = () => {
     const d = drag.current;
     drag.current = null;
+    clearEdge();
     setDragDx(0);
     if (d?.moved) setTasks((ts) => resolveOverlaps(ts));
-    if (d && d.mode === "move" && Math.abs(dragDx) > 80) moveToDay(d.id, dragDx > 0 ? 1 : -1);
-    else if (d && !d.moved && d.mode === "move") setOpenId(d.id);
+    if (d && !d.moved && d.mode === "move") setOpenId(d.id);
   };
 
   const addTask = () => {
